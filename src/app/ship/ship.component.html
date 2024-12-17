@@ -1,0 +1,1343 @@
+<div class="container">
+    <!-- Left Column: Stepper -->
+    <div class="left-panel">
+        <h1>Build-a-Ship Workshop</h1>
+        <mat-stepper orientation="vertical" [linear]="isLinear" #stepper>
+            <mat-step label="Select Vehicle Type">
+                <!-- Content for Select Vehicle Type -->
+                <h2>Select a Tech Level</h2>
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Tech Level</mat-label>
+                    <mat-select [(ngModel)]="ship.techLevel" (ngModelChange)="updateCost($event)">
+                      @for (level of techLevels; track level) {
+                        <mat-option [value]="level">{{ level }}</mat-option>
+                      }
+                    </mat-select>
+                </mat-form-field>                
+                <h2>Select a Ship Type</h2>
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Ship Type</mat-label>
+                    <mat-select [(ngModel)]="ship.shipType" placeholder="Choose a Ship Type"  (ngModelChange)="updateCost($event)">
+                        @for (type of shipTypes; track type) {
+                            <mat-option [value]="type">
+                                {{ type }}
+                            </mat-option>
+                        }
+                    </mat-select>
+                </mat-form-field>
+                <!-- Content for Select Hard and Strong Points -->
+                <h2>Select a Modification Type</h2>
+                <mat-radio-group [(ngModel)]="ship.modificationType" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Modification Type:</mat-label>
+                    <mat-radio-button value="New Construction">New Construction</mat-radio-button>
+                    <mat-radio-button value="Retrofit">Retrofit</mat-radio-button>
+                </mat-radio-group>
+
+                <!-- Content for Select Hard and Strong Points -->
+                <h2>Select a Governing Body</h2>
+                <mat-radio-group [(ngModel)]="ship.governingBody" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Governing Body:</mat-label>
+                    <mat-radio-button value="ISC">ISC</mat-radio-button>
+                    <mat-radio-button value="Imperial">Imperial</mat-radio-button>
+                    <mat-radio-button value="Other">Other</mat-radio-button>
+                </mat-radio-group>
+
+                <div class="step-navigation">
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Mass and Volume">
+                <!-- Content for Select Mass and Volume -->
+                <h2>Enter Mass of Vehicle</h2>
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Enter Ship Mass</mat-label>
+                    <input
+                        matInput
+                        type="number"
+                        min="0"
+                        [max] = "ship.hullMaterial.maximumMass"
+                        [(ngModel)]="ship.mass" 
+                        (ngModelChange)="updateCost($event)"
+                        placeholder="Enter mass (min: 1)"
+                    />
+                    <mat-error *ngIf="ship.mass >= ship.hullMaterial.maximumMass">WARNING: Maximum mass for Hull Material is {{ship.hullMaterial.maximumMass | number:'1.0-0'}}</mat-error>
+                </mat-form-field>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Hull">
+                <!-- Content for Select Hull -->
+                <h2>Select Hull Material for Vehicle</h2>
+                <!-- Hull Material Selection -->
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Hull Material</mat-label>
+                    <mat-select [(ngModel)]="ship.hullMaterial" (ngModelChange)="updateCost($event)">
+                        @for (material of hullMaterials; track material) {
+                            <mat-option
+                                [value]="material"
+                                [disabled]="material.techLevel > ship.techLevel || (ship.mass && material.maximumMass < ship.mass)"
+                            >
+                                {{ material.material }} (CAT {{ material.category }})
+                            </mat-option>
+                        }
+                    </mat-select>
+                </mat-form-field>
+                <!-- Superior Alloy Selection -->
+                <h2>Select Superior Alloy (if any) for Vehicle</h2>
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Superior Alloy</mat-label>
+                    <mat-select [(ngModel)]="ship.superiorAlloy" (ngModelChange)="updateCost($event)">
+                        @for (alloy of superiorAlloys; track alloy) {
+                            <mat-option [value]="alloy">
+                                {{ alloy.effect }} (x{{ alloy.costMultiplier }} hull cost modifier)
+                            </mat-option>
+                        }
+                    </mat-select>
+                </mat-form-field>
+                <!-- Maximum Acceleration Slider -->
+                <div class="slider-container">
+                    <mat-label>Maximum Acceleration (G)</mat-label>
+                    <div matSuffix>{{ ship.maxAcceleration }} G</div>
+                    <mat-slider
+                    id="acceleration-slider"
+                    min="0"
+                    max="100"
+                    step="1"
+                  >
+                    <input matSliderThumb [(ngModel)]="ship.maxAcceleration" (ngModelChange)="updateCost($event)" />
+                  </mat-slider>
+                </div>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Hard and Strong Points">
+                <!-- Strong Points Selection -->
+                <h2>Enter Additional Strong Points ({{ ship.mass/100  | number:'1.0-0'}} included)</h2>
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Additional Strong Points</mat-label>
+                    <input
+                        matInput
+                        type="number"
+                        min="0"
+                        [(ngModel)]="ship.strongPoints"
+                        (ngModelChange)="updateCost($event)"
+                    />
+                </mat-form-field>
+
+                <!-- Hard Points Selection -->
+                <h2>Enter Number of Hard Points</h2>
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Hard Points</mat-label>
+                    <input
+                        matInput
+                        type="number"
+                        min="0"
+                        [(ngModel)]="ship.hardPoints"
+                        (ngModelChange)="updateCost($event)"
+                    />
+                </mat-form-field>                 
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Add Armor Belt">
+                <!-- Content for Add Armor Belt -->
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Armor Belt Protection</mat-label>
+                    <mat-select [(ngModel)]="ship.armorBelt" (ngModelChange)="updateCost($event)">
+                        <mat-option *ngFor="let option of armorBeltOptions" [value]="option">
+                            +{{ option.db }} DB and +{{ option.hitsMultiplier }}% Hits
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>                 
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Drives">
+                <!-- Content for Select Drives -->
+                <h2>Select Drives</h2>
+                <mat-form-field appearance="outline" class="cargo-field">
+                    <mat-label>Number of Reactionless Drive Units</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="1"
+                      max = "99999999"
+                      [(ngModel)]="ship.reactionlessDriveUnits"
+                      (ngModelChange)="updateCost($event)"
+                      placeholder="Enter number of Reactionless Drive Units"
+                    />
+                </mat-form-field>
+                <mat-radio-group [(ngModel)]="ship.hasRelativeInertialForceGenerator" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Relative Inertial Force Generator:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select FTL Drive">
+                <ng-template matStepLabel>Select FTL Drive</ng-template>
+                <!-- Content for Select FTL Drive -->
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Armaments">
+                <ng-template matStepLabel>Select Armaments</ng-template>
+                <!-- Content for Select Armaments -->
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Determine Targeting Bonus">
+                <ng-template matStepLabel>Determine Targeting Bonus</ng-template>
+                <!-- Content for Determine Targeting Bonus -->
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Payload Pallets">
+                <ng-template matStepLabel>Select Payload Pallets</ng-template>
+                <!-- Content for Select Payload Pallets -->
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Special Ordnance">
+                <ng-template matStepLabel>Select Special Ordnance</ng-template>
+                <!-- Content for Select Special Ordnance -->
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Melee Value">
+                <ng-template matStepLabel>Select Melee Value</ng-template>
+                <!-- Content for Select Melee Value -->
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Tractor Beam Projectors">
+                <!-- Content for Select Tractor Beam Projectors -->
+                <h2>Select Tractor Beam Projectors</h2>
+                <mat-radio-group [(ngModel)]="ship.hasTractorBeam" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Has Tractor Beam Projector:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>                
+                <h2>Select a Tractor Beam Frame Size</h2>
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Frame Size</mat-label>
+                    <mat-select [(ngModel)]="ship.tractorBeamSize" (ngModelChange)="updateCost($event)" [disabled] = "!ship.hasTractorBeam">
+                      @for (frameSize of frameSizes; track frameSize) {
+                        <mat-option [value]="frameSize">{{ frameSize }}</mat-option>
+                      }
+                    </mat-select>
+                </mat-form-field>                
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Communications Gear">
+                <!-- Content for Select Communications Gear -->
+                <h2>Select Communications Gear</h2>
+                <mat-radio-group [(ngModel)]="ship.hasMicrofrequencyCommRig" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Microfrequency Comm Rig:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>                
+                <mat-radio-group [(ngModel)]="ship.hasTightBeamCommRig" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Tight Beam Comm Rig:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>                
+                <mat-radio-group [(ngModel)]="ship.hasTachyonCommRig" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Tachyon Comm Rig:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>                
+                <mat-radio-group [(ngModel)]="ship.hasQuantumCommRig" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Quantum Comm Rig:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>                
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Sensors">
+                <!-- Content for Select Sensors -->
+                <h2>Select Sensor Suite Packages</h2>
+                <mat-radio-group [(ngModel)]="ship.sensorType" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Sensor Suite:</mat-label>
+                    <mat-radio-button value="Basic">Basic Sensor Suite</mat-radio-button>
+                    <mat-radio-button value="Advanced">Advanced Sensor Suite</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.electronicSurveillance" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Electronic Surveillance Sensor Suite:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Electronic Warfare">
+                <!-- Content for Select Electronic Warfare -->
+                <div class="slider-container">
+                    <mat-label>Passive EW Rating</mat-label>
+                    <div matSuffix>{{ ship.passiveEWRating }}</div>
+                    <mat-slider
+                        id="passive-ew-rating-slider"
+                        min="0"
+                        [max]="ewTechLevel.passiveEWMax"
+                        step="1"
+                        >
+                        <input matSliderThumb [(ngModel)]="ship.passiveEWRating" (ngModelChange)="updateCost($event)" />
+                    </mat-slider>
+                </div>
+                <div class="slider-container">
+                    <mat-label>Active EW Rating</mat-label>
+                    <div matSuffix>{{ ship.activeEWRating }}</div>
+                    <mat-slider
+                        id="active-ew-rating-slider"
+                        min="0"
+                        [max]="ewTechLevel.activeEWMax"
+                        step="1"
+                        >
+                        <input matSliderThumb [(ngModel)]="ship.activeEWRating" (ngModelChange)="updateCost($event)" />
+                    </mat-slider>
+                </div>
+                <h2>Electronic Warfare Officers</h2>
+                <mat-form-field appearance="outline" class="cargo-field">
+                    <mat-label>Number of Electronic Warfare Officers</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="1"
+                      max = "99999999"
+                      [(ngModel)]="ship.EWOfficers"
+                      (ngModelChange)="updateCost($event)"
+                      placeholder="Enter number of EW Officers"
+                    />
+                </mat-form-field>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Defensive Screens">
+                <!-- Content for Select Defensive Screens -->
+                <div class="slider-container">
+                    <mat-label>Defensive Screen Rating</mat-label>
+                    <div matSuffix>{{ ship.defensiveScreenRating }}</div>
+                    <mat-slider
+                        id="defensive-screen-rating-slider"
+                        min="0"
+                        max="100"
+                        step="1"
+                        >
+                        <input matSliderThumb [(ngModel)]="ship.defensiveScreenRating" (ngModelChange)="updateCost($event)" />
+                    </mat-slider>
+                </div>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Decoys">
+                <!-- Content for Select Decoys -->
+                <h2>Select Decoys</h2>
+                <mat-form-field appearance="outline" class="cargo-field">
+                    <mat-label>Number of Decoys</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="0"
+                      max = "99999999"
+                      [(ngModel)]="ship.decoys"
+                      (ngModelChange)="updateCost($event)"
+                      placeholder="Enter number of Decoys"
+                    />
+                </mat-form-field>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Point Defense System">
+                <!-- Content for Select Point Defense System -->
+                <!-- Ship Point Defense Attacks Slider -->
+                <div class="slider-container">
+                    <mat-label>Ship Point Defense Attacks</mat-label>
+                    <div matSuffix>{{ ship.pointDefenseAttacks }}</div>
+                    <mat-slider
+                        id="point-defense-attacks-slider"
+                        min="0"
+                        max="6"
+                        step="1"
+                        >
+                        <input matSliderThumb [(ngModel)]="ship.pointDefenseAttacks" (ngModelChange)="updateCost($event)" />
+                    </mat-slider>
+                </div>
+                <!-- Ship Point Defense Rating Slider -->
+                <div class="slider-container">
+                    <mat-label>Ship Point Defense Rating</mat-label>
+                    <div class="rating-display">{{ ship.pointDefenseRating }}</div>
+                    <mat-slider
+                        id="maneuverability-rating-slider"
+                        min="0"
+                        max="8"
+                        step="1"
+                        >
+                        <input matSliderThumb [(ngModel)]="ship.pointDefenseRating" (ngModelChange)="onPointDefenseRatingSliderInput($event)" />
+                    </mat-slider>
+                </div>
+                <mat-radio-group [(ngModel)]="ship.pointDefenseEscort" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Escort-Sized Point Defense System:</mat-label>
+                    <mat-radio-button [value]="true" [disabled]="ship.mass < 1000 || ship.pointDefenseAttacks < 6">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Maneuverability">
+                <!-- Ship Maneuverability Slider -->
+                <div class="slider-container">
+                    <mat-label>Ship Maneuverability Rating</mat-label>
+                    <div matSuffix>{{ ship.maneuverabilityRating }}</div>
+                    <mat-slider
+                        id="maneuverability-rating-slider"
+                        min="0"
+                        max="100"
+                        step="1"
+                        >
+                        <input matSliderThumb [(ngModel)]="ship.maneuverabilityRating" (ngModelChange)="updateCost($event)" />
+                    </mat-slider>
+                </div>
+                <!-- Content for Select Maneuverability -->
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Power Source">
+                <!-- Content for Select Power Source -->
+                <h2>Select Power Source</h2>
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Power Source</mat-label>
+                    <mat-select [(ngModel)]="ship.powerSource" placeholder="Choose a Power Source"  (ngModelChange)="updateCost($event)">
+                        @for (powerSource of powerSources; track powerSource) {
+                            <mat-option [value]="powerSource">
+                                {{ powerSource }}
+                            </mat-option>
+                        }
+                    </mat-select>
+                </mat-form-field>
+                <h2>Select Power Rating</h2>
+                <mat-form-field appearance="outline" class="cargo-field">
+                    <mat-label>Power Rating (Needs at 100% Utilization: {{(ship.powerNeeds) | number:'1.0-4'}}):</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="0"
+                      [(ngModel)]="ship.powerRating"
+                      (ngModelChange)="updateCost($event)"
+                      placeholder="Enter Ship Power Rating"
+                    /> <mat-error *ngIf="ship.powerRating < (ship.powerNeeds)">WARNING: Not all components can be powered simultaneously</mat-error>
+                </mat-form-field>    
+            <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Determine Minimum Crew">
+                <!-- Content for Determine Minimum Crew -->
+                <h2>Nothing to Select</h2>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Determine Crewmember Control Areas">
+                <!-- Content for Determine Crewmember Control Areas -->
+                <h2>Nothing to Select</h2>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select AI Systems">
+                <!-- Content for Select AI Systems -->
+                <h2>Select AI Systems</h2>
+                <mat-form-field appearance="outline" class="cargo-field">
+                    <mat-label>AI Crewmembers (Max: {{(ship.totalCrew * 0.8) | number:'1.0-0'}}):</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="0"
+                      [max] = "(ship.totalCrew * 0.8)"
+                      [(ngModel)]="ship.aiCrewmembers"
+                      (ngModelChange)="updateCost($event)"
+                      placeholder="Enter number of AI Crewmembers"
+                    /> <mat-error *ngIf="ship.aiCrewmembers > (ship.totalCrew * 0.8)">Error: AI Crewmembers must be no greater than {{(ship.totalCrew * 0.8) | number:'1.0-0'}}</mat-error>
+                </mat-form-field>    
+                <mat-radio-group [(ngModel)]="ship.aiSystem" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>MIRC:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Crew Quarters">
+                <!-- Content for Select Crew Quarters -->
+                <h2>Nothing to Select</h2>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Passenger Accommodations">
+                <!-- Content for Select Passenger Accommodations -->
+                <div class="passenger-accommodations">
+                    <h2>Select Passenger Accomodations</h2>
+                    <mat-form-field appearance="outline" class="cargo-field">
+                        <mat-label>First Class Staterooms:</mat-label>
+                        <input
+                            matInput
+                            type="number"
+                            min="0"
+                            [(ngModel)]="ship.firstClassStaterooms"
+                            (ngModelChange)="updateCost($event)"
+                            placeholder="Enter number of First Class Staterooms"
+                        />
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="cargo-field">
+                        <mat-label>Standard Staterooms:</mat-label>
+                        <input
+                            matInput
+                            type="number"
+                            min="0"
+                            [(ngModel)]="ship.standardStaterooms"
+                            (ngModelChange)="updateCost($event)"
+                            placeholder="Enter number of Standard Staterooms"
+                        />
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="cargo-field">
+                        <mat-label>Low/Military Staterooms:</mat-label>
+                        <input
+                            matInput
+                            type="number"
+                            min="0"
+                            [(ngModel)]="ship.lowMilitaryStaterooms"
+                            (ngModelChange)="updateCost($event)"
+                            placeholder="Enter number of Low/Military Staterooms"
+                        />
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="cargo-field">
+                        <mat-label>Cryogenic Berths:</mat-label>
+                        <input
+                            matInput
+                            type="number"
+                            min="0"
+                            [(ngModel)]="ship.cryogenicBerths"
+                            (ngModelChange)="updateCost($event)"
+                            placeholder="Enter number of Cryogenic Berths"
+                        />
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="cargo-field">
+                        <mat-label>Seating:</mat-label>
+                        <input
+                            matInput
+                            type="number"
+                            min="0"
+                            [(ngModel)]="ship.seating"
+                            (ngModelChange)="updateCost($event)"
+                            placeholder="Enter number of Seats"
+                        />
+                    </mat-form-field>
+                </div>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Life Support">
+                <!-- Content for Select Life Support -->
+                <h2>Select Life Support</h2>
+                <mat-radio-group [(ngModel)]="ship.lifeSupport" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Life Support:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Determine Recreational Facilities">
+                <!-- Content for Determine Recreational Facilities -->
+                <h2>Determine Recreational Facilities</h2>
+                <mat-radio-group [(ngModel)]="ship.recreationalFacilities" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Recreational Facilities:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Medical Dispensary">
+                <!-- Content for Select Medical Dispensary -->
+                <h2>Select a Medical Dispensary</h2>
+                <mat-radio-group [(ngModel)]="ship.medicalDispensary" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Medical Dispensary:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Medical Sick Bay">
+                <!-- Content for Select Medical Sick Bay -->
+                <h2>Select Medical Sick Bay</h2>
+                <mat-form-field appearance="outline" class="cargo-field">
+                    <mat-label>Sick Bay Capacity:</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="0"
+                      [(ngModel)]="ship.sickbayCapacity"
+                      (ngModelChange)="updateCost($event)"
+                      placeholder="Enter sick bay capacity"
+                    />
+                  </mat-form-field>    
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Labs">
+                <!-- Content for Select Labs -->
+                <h2>Select Labs</h2>
+                <mat-form-field appearance="outline" class="cargo-field">
+                    <mat-label>Number of Labs:</mat-label>
+                    <input
+                        matInput
+                        type="number"
+                        min="0"
+                        [(ngModel)]="ship.labs"
+                        (ngModelChange)="updateCost($event)"
+                        placeholder="Enter number of Labs"
+                    />
+                </mat-form-field>
+                <div class="slider-container">
+                    <mat-label>Lab Bonus</mat-label>
+                    <div matSuffix>{{ ship.labBonus }}</div>
+                    <mat-slider
+                        id="lab-bonus-slider"
+                        min="0"
+                        max="50"
+                        step="5"
+                        >
+                        <input matSliderThumb [(ngModel)]="ship.labBonus" (ngModelChange)="updateCost($event)" />
+                    </mat-slider>
+                </div>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Workshop">
+                <!-- Content for Select Workshop -->
+                <h2>Select a Workshop</h2>
+                <mat-radio-group [(ngModel)]="ship.workshop" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Workshop:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Security Stations">
+                <!-- Content for Select Security Stations -->
+                <h2>Select Security Stations</h2>
+                <mat-form-field appearance="outline" class="cargo-field">
+                    <mat-label>Total Security Personnel:</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="0"
+                      [(ngModel)]="ship.securityPersonnel"
+                      (ngModelChange)="updateCost($event)"
+                      placeholder="Enter number of security personnel"
+                    />
+                  </mat-form-field>                
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Fighter Bays">
+                <!-- Content for Select Fighter Bays -->
+                <h2>Select Fighter Bays</h2>
+                <mat-form-field appearance="outline" class="cargo-field">
+                    <mat-label>Total Mass of Fighters Held:</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="0"
+                      [(ngModel)]="ship.fighterBayMassHeld"
+                      (ngModelChange)="updateCost($event)"
+                      placeholder="Enter mass of all fighters"
+                    />
+                  </mat-form-field>                
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Vehicle Bays">
+                <!-- Content for Select Vehicle Bays -->
+                <h2>Select Vehicle Bays</h2>
+                <mat-form-field appearance="outline" class="cargo-field">
+                    <mat-label>Total Mass of Vehicles Held:</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="0"
+                      [(ngModel)]="ship.vehicleBayMassHeld"
+                      (ngModelChange)="updateCost($event)"
+                      placeholder="Enter mass of all vehicles"
+                    />
+                  </mat-form-field>                
+                  <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Cargo Hold">
+                <h2>Select Cargo Hold Volume</h2>
+                <mat-form-field appearance="outline" class="cargo-field">
+                    <mat-label>Total Volume of Cargo Hold:</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="0"
+                      [(ngModel)]="ship.cargoHoldVolume"
+                      (ngModelChange)="updateCost($event)"
+                      placeholder="Enter cargo hold volume"
+                    />
+                  </mat-form-field>
+                  <h2>Select Cargo Hold Mass</h2>
+                  <mat-form-field appearance="outline" class="cargo-field">
+                    <mat-label>Total Mass of Cargo Hold:</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="0"
+                      [(ngModel)]="ship.cargoHoldMass"
+                      (ngModelChange)="updateCost($event)"
+                      placeholder="Enter cargo hold mass"
+                    />
+                  </mat-form-field>
+                  <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Atmospheric Streamlining">
+                <!-- Content for Select Atmospheric Streamlining -->
+                <h2>Select Atmospheric Streamlining</h2>
+                <mat-radio-group [(ngModel)]="ship.atmosphericStreamlining" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Atmospheric Streamlining:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Submarine Streamlining">
+                <!-- Content for Select Submarine Streamlining -->
+                <h2>Select Submarine Streamlining</h2>
+                <mat-radio-group [(ngModel)]="ship.submarineStreamlining" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Submarine Streamlining:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Landing Gear">
+                <!-- Content for Select Landing Gear -->
+                <h2>Select Landing Gear</h2>
+                <mat-error *ngIf="ship.mass >= 100000">
+                    <p>Warning: Landing Gear is not allowed for mass 100,000 mt or more.</p>
+                </mat-error>
+                <mat-radio-group [(ngModel)]="ship.landingGear" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Landing Gear:</mat-label>
+                    <mat-radio-button [value]="true" [disabled]="ship.mass >= 100000">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Radiation Shielding">
+                <!-- Content for Select Radiation Shielding -->
+                <div class="slider-container">
+                    <mat-label>Radiation Shielding Rating</mat-label>
+                    <div matSuffix>{{ ship.radiationShieldingRating }}</div>
+                    <mat-slider
+                        id="radiation-shielding-rating-slider"
+                        min="0"
+                        max="100"
+                        step="1"
+                        >
+                        <input matSliderThumb [(ngModel)]="ship.radiationShieldingRating" (ngModelChange)="updateCost($event)" />
+                    </mat-slider>
+                </div>                
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Computer Programs">
+                <!-- Content for Select Computer Programs -->
+                <div class="slider-container">
+                    <mat-label>Evade Program Rating</mat-label>
+                    <div matSuffix>{{ ship.evadeProgramRating }}</div>
+                    <mat-slider
+                        id="evade-program-rating-slider"
+                        min="0"
+                        [max]="maneuverabilityBonus"
+                        step="1"
+                        >
+                        <input matSliderThumb [(ngModel)]="ship.evadeProgramRating" (ngModelChange)="updateCost($event)" />
+                    </mat-slider>
+                </div>                
+                <div class="slider-container">
+                    <mat-label>Predict Program Rating</mat-label>
+                    <div matSuffix>{{ ship.predictProgramRating }}</div>
+                    <mat-slider
+                        id="predict-program-rating-slider"
+                        min="0"
+                        max="100"
+                        step="1"
+                        >
+                        <input matSliderThumb [(ngModel)]="ship.predictProgramRating" (ngModelChange)="updateCost($event)" />
+                    </mat-slider>
+                </div>                
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Auxiliary Systems">
+                <ng-template matStepLabel>Select Auxiliary Systems</ng-template>
+                <!-- Content for Select Auxiliary Systems -->
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Select Features and Design Flaws">
+                <h2>Select Features</h2>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.advancedCombatComputer" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Advanced Combat Computer:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.agileCommunicationsSystem" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Agile Commmunications System:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.agileTargetingSystem" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Agile Targetting Computer:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-label class="inline-label">Airlock Quantity:</mat-label>
+                <input
+                    matInput
+                    type="number"
+                    min="0"
+                    [(ngModel)]="ship.shipFeatures.airlockQuantity"
+                    (input)="updateCost($event)"
+                />
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.artificialGravity" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Artificial Gravity:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.computerTranslator" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Computer Translator:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.cramped" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Cramped:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-label class="inline-label">Docking Rings:</mat-label>
+                <input
+                    matInput
+                    type="number"
+                    min="0"
+                    [(ngModel)]="ship.shipFeatures.dockingRingQuantity"
+                    (input)="updateCost($event)"
+                />
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.externalSpeakers" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>External Speakers:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.extremeTemperatureShielding" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Extreme Temerature Shielding:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.gFoceSuppressionSystem" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>G-Force Suppression System:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.gpsMappingSystem" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>GPS and Mapping Systems:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.infraredHUD" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Infrared HUD:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.loLiteHUD" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Lo-Lite HUD:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.meleeWeapon" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Melee Weapon:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.plush" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Plush:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.shieldedWeapons" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Shielded Weapons:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.spacious" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Spacious:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.telescopicHUD" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Telescopic HUD:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.topQualityWeapons" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Top Quality Weapons:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.shipFeatures.wellShieldedDrives" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Well-Shielded Drives:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Determine Final Mass and Volume">
+                <ng-template matStepLabel>Determine Final Mass and Volume</ng-template>
+                <!-- Content for Determine Final Mass and Volume -->
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                    <!-- Next Button -->
+                    <button mat-raised-button color="primary" (click)="stepper.next()" class="next-button">Next</button>
+                </div>
+            </mat-step>
+            <mat-step label="Determine Final Cost">
+                <ng-template matStepLabel>Determine Final Cost</ng-template>
+                <!-- Content for Determine Final Cost -->
+                <div class="step-navigation">
+                    <!-- Back Button -->
+                    <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
+                </div>
+            </mat-step>
+        </mat-stepper>
+    </div>
+
+    <!-- Right Column: Summary -->
+    <div class="right-panel">
+        <h1>Summary</h1>
+        <p>All your decisions will appear here in summary form.</p>
+        <div class="summary-content">
+            <!-- Dynamic summary content -->
+            <mat-error *ngIf="ship.currentMass > ship.mass">
+                <p>Warning: Using more mass than was requested for Ship Mass</p>
+            </mat-error>
+            <mat-error *ngIf="ship.currentVolume > ship.volume">
+                <p>Warning: Using more volume than was requested for Ship Volume</p>
+            </mat-error>
+            @if (ship.techLevel) {
+                <p>Tech Level: <strong>{{ ship.techLevel }}</strong></p>
+            }
+            @if (ship.shipType) {
+                <p>Vehicle Type: <strong>{{ship.governingBody}} - {{ ship.shipType }} - {{ship.modificationType}}</strong></p>
+            }
+            @if (ship.mass) {
+                <p>Ship Mass: <strong>{{ ship.mass  | number:'1.0-0'}} mt</strong>, Current Mass Used: <strong>{{ship.currentMass | number:'1.0-0'}} mt</strong></p>
+            } 
+            @if (ship.volume) {
+                <p>Ship Volume: <strong>{{ ship.volume  | number:'1.0-0'}} kL</strong>, Current Volume Used: <strong>{{ship.currentVolume | number:'1.0-0'}} kL</strong></p>
+            }            
+            @if (ship.cost >= 0) {
+                <p>Ship Cost: <strong>{{ ship.cost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.hits >= 0) {
+                <p>Ship Hits: <strong>{{ ship.hits  | number:'1.0-0'}} hits</strong></p>
+            }
+            @if (ship.hullMaterial) {
+                <p>Hull Material: <strong>{{ ship.hullMaterial.material}} (CAT {{ship.hullMaterial.category}})</strong>, Cost: <strong>{{ hullMaterialCost - superiorAlloyCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if(ship.superiorAlloy){
+                <p>Superior Alloy: <strong>{{ ship.superiorAlloy.effect}}</strong>, Cost: <strong>{{ superiorAlloyCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.maxAcceleration >= 0) {
+                <p>Maximum Acceleration: <strong>{{ ship.maxAcceleration}} Gs</strong></p>
+            }
+            @if(ship.maxAcceleration > 1 && ship.reinforcement >= 0) {
+                <p>Reinforcement Required: <strong>{{ ship.reinforcement*100 | number:'1.0-2'}}%</strong>, Cost: <strong>{{ reinforcementCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.strongPoints >=0) {
+                <p>Strong Points: <strong>{{ ship.strongPoints+(ship.mass/100)  | number:'1.0-0'}}</strong>, Cost: <strong>{{ strongPointCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.hardPoints >=0) {
+                <p>Hard Points: <strong>{{ ship.hardPoints  | number:'1.0-0'}}</strong>, Cost: <strong>{{ hardPointCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.armorBelt) {
+                <p>Armor Belt: <strong>+{{ ship.armorBelt.db }} DB and +{{ ship.armorBelt.hitsMultiplier }}% Hits</strong>, Cost: <strong>{{ armorBeltCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.reactionlessDriveUnits > 0) {
+                <p>Reactionless Drives: <strong>{{ ship.reactionlessDriveUnits| number:'1.0-0'}}</strong>, Cost: <strong>{{ reactionlessDriveCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.hasRelativeInertialForceGenerator) {
+                <p>Relative Inertial Force Generator Cost: <strong>{{ rifGeneratorCost  | number:'1.0-0'}} credits</strong></p>
+            }
+
+            @if (ship.hasTractorBeam) {
+                <p>Tractor Beam Power: <strong>MK{{ ship.tractorBeamPower| number:'1.0-0'}}</strong>, Cost: <strong>{{ tractorBeamCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.hasMicrofrequencyCommRig) {
+                <p>Microfrequency Comm Rig Cost: <strong>{{ 0  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.hasTightBeamCommRig) {
+                <p>Tight Beam Comm Rig Cost: <strong>{{ tightBeamCommRigCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.hasTachyonCommRig) {
+                <p>Tachyon Beam Comm Rig Range: <strong>{{ tachyonCommRigRange  | number:'1.0-0'}} LY</strong>, Days/LY: <strong>{{ tachyonCommRigDaysLY  | number:'1.0-2'}} Days</strong>, Cost: <strong>{{ tachyonCommRigCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.hasQuantumCommRig) {
+                <p>Quantum Comm Rig Range: <strong>{{ quantumCommRigRange  | number:'1.0-0'}} LY</strong>, Cost: <strong>{{ quantumCommRigCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.sensorType) {
+                <p>@if (ship.sensorType === 'Advanced'){Advanced} @else {Basic} Sensor Suite Cost: <strong>{{ sensorSuiteCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.electronicSurveillance) {
+                <p>Electronic Surveillance Sensor Suite Cost: <strong>{{ electronicSurveillanceSuiteCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.passiveEWRating > 0) {
+                <p>Passive EW Rating: <strong>+{{ ship.passiveEWRating  | number:'1.0-0'}}</strong>, Cost: <strong>{{ passiveEWCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.activeEWRating > 0) {
+                <p>Active EW Rating: <strong>+{{ ship.activeEWRating  | number:'1.0-0'}}</strong>, EW Officers: <strong>{{ ship.EWOfficers| number:'1.0-0'}}</strong>, Cost: <strong>{{ activeEWCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.defensiveScreenRating > 0) {
+                <p>Defensive Screen Rating: <strong>{{ ship.defensiveScreenRating  | number:'1.0-0'}}</strong>, Bonus: <strong>+{{ defensiveScreenBonus  | number:'1.0-0'}} DB</strong>, Cost: <strong>{{ defensiveScreenCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.decoys > 0) {
+                <p>Decoys: <strong>{{ ship.decoys  | number:'1.0-0'}}</strong>, Cost: <strong>{{ decoyCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.pointDefenseAttacks > 0 && ship.pointDefenseRating > 0) {
+                <p>Point Defense Attacks / Rating: <strong>{{ ship.pointDefenseAttacks * (ship.pointDefenseEscort ? 10 : 1) }} / {{ship.pointDefenseRating}}</strong>, Cost: <strong>{{ pointDefenseCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.maneuverabilityRating) {
+                <p>Maneuverability Rating: <strong>{{ ship.maneuverabilityRating }}</strong>, Maneuverability Bonus: <strong>+{{ maneuverabilityBonus}}</strong>, Cost: <strong>{{ maneuverabilityRatingCost  | number:'1.0-0'}} credits</strong></p>
+                <mat-error *ngIf="ship.maneuverabilityRating === 0">Using minimum maneuvering units</mat-error>
+            }
+            @if (ship.powerSource) {
+                <p>Power Source: <strong>{{ ship.powerSource }}</strong>, Power Rating: <strong>{{ ship.powerRating| number:'1.0-4'}}</strong>, Cost: <strong>{{ powerSourceCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if ((ship.totalCrew - ship.crew.general) > 0) {
+                <p>Crewmember Control Areas: <strong>{{ (ship.totalCrew - ship.crew.general)  | number:'1.0-0'}}</strong>, Cost: <strong>{{ crewmemberControlAreaCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.aiSystem) {
+                <p>MIRC Cost: <strong>{{ aiSystemCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.totalCrew > 0) {
+                <p>Crew Quarters Cost: <strong>{{ crewQuartersCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.totalPassengers > 0) {
+                @if (ship.firstClassStaterooms > 0) {
+                    <p>First Class Staterooms: <strong>{{ ship.firstClassStaterooms | number:'1.0-0'}}</strong>, Cost: <strong>{{ firstClassStateroomCost  | number:'1.0-0'}} credits</strong></p>
+                }
+                @if (ship.standardStaterooms > 0) {
+                    <p>Standard Staterooms: <strong>{{ ship.standardStaterooms | number:'1.0-0'}}</strong>, Cost: <strong>{{ standardStateroomCost  | number:'1.0-0'}} credits</strong></p>
+                }
+                @if (ship.lowMilitaryStaterooms > 0) {
+                    <p>Low/Military Staterooms: <strong>{{ ship.lowMilitaryStaterooms | number:'1.0-0'}}</strong>, Cost: <strong>{{ lowMilitaryStateroomCost  | number:'1.0-0'}} credits</strong></p>
+                }
+                @if (ship.cryogenicBerths > 0) {
+                    <p>Cryogenic Berths: <strong>{{ ship.cryogenicBerths | number:'1.0-0'}}</strong>, Cost: <strong>{{ cryogenicBerthCost  | number:'1.0-0'}} credits</strong></p>
+                }
+                @if (ship.seating > 0) {
+                    <p>Seating: <strong>{{ ship.seating | number:'1.0-0'}}</strong>, Cost: <strong>{{ seatingCost  | number:'1.0-0'}} credits</strong></p>
+                }
+            }
+            @if (ship.lifeSupport) {
+                <p>Life Support Cost: <strong>{{ lifeSupportCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.medicalDispensary) {
+                <p>Medical Dispensary Cost: <strong>{{ sickbayCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.sickbayCapacity >= 0) {
+                <p>Sick Bay Capacity: <strong>{{ ship.sickbayCapacity | number:'1.0-2'}}</strong>, Cost: <strong>{{ sickbayCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.labs >= 0) {
+                <p>Labs: <strong>{{ ship.labs | number:'1.0-2'}}</strong>, Bonus: <strong>{{ ship.labBonus | number:'1.0-2'}}</strong>, Cost: <strong>{{ labCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.workshop) {
+                <p>Workshop CIP Stored: <strong>{{ ship.workshopCIP | number:'1.0-2'}}</strong>, Cost: <strong>{{ workshopCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.securityPersonnel) {
+                <p>Security Personnel: <strong>{{ ship.securityPersonnel | number:'1.0-2'}}</strong>, Cost: <strong>{{ securityStationCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.fighterBayMassHeld >=0) {
+                <p>Fighter Bays: <strong>{{ ship.fighterBayMassHeld * 15 | number:'1.0-2'}} kL</strong>, Mass: <strong>{{ ship.fighterBayMassHeld * 5 | number:'1.0-2'}} mt</strong>, Cost: <strong>{{ fighterBayCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.vehicleBayMassHeld >=0) {
+                <p>Vehicle Bays: <strong>{{ ship.vehicleBayMassHeld * 9 | number:'1.0-2'}} kL</strong>, Mass: <strong>{{ ship.vehicleBayMassHeld * 3 | number:'1.0-2'}} mt</strong>, Cost: <strong>{{ vehicleBayCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.cargoHoldVolume >=0) {
+                <p>Cargohold: <strong>{{ ship.cargoHoldVolume | number:'1.0-2'}} kL</strong>, Mass: <strong>{{ ship.cargoHoldMass | number:'1.0-2'}} mt</strong>, Cost: <strong>{{ cargoHoldCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.atmosphericStreamlining) {
+                <p>Atmosheric Streamlining Cost: <strong>{{ atmosphericStreamliningCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.submarineStreamlining) {
+                <p>Submarine Streamlining Cost: <strong>{{ submarineStreamliningCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.landingGear) {
+                <p>Landing Gear Cost: <strong>{{ landingGearCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.radiationShieldingRating > 0) {
+                <p>Radiation Shielding Rating: <strong>{{ ship.radiationShieldingRating  | number:'1.0-0'}}</strong>, Bonus: <strong>+{{ radiationShieldingBonus  | number:'1.0-0'}} DB/RR</strong>, Cost: <strong>{{ radiationShieldingCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.evadeProgramRating > 0) {
+                <p>Evade Program Rating: <strong>{{ ship.evadeProgramRating  | number:'1.0-0'}}</strong>, Bonus: <strong>+{{ evadeProgramBonus  | number:'1.0-0'}} DB</strong>, Cost: <strong>{{ evadeProgramCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.predictProgramRating > 0) {
+                <p>Predict Program Rating: <strong>{{ ship.predictProgramRating  | number:'1.0-0'}}</strong>, Bonus: <strong>+{{ predictProgramBonus  | number:'1.0-0'}} OB</strong>, Cost: <strong>{{ predictProgramCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.advancedCombatComputer) {
+                <p>Advanced Combat Computer Cost: <strong>{{ 300000  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.agileCommunicationsSystem) {
+                <p>Agile Communications System Cost: <strong>{{ 200000  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.agileTargetingSystem) {
+                <p>Agile Targeting Computer Cost: <strong>{{ shipCostBeforeFeaturesFlaws * 0.05  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.airlockQuantity > 0) {
+                <p>Airlock ({{ship.shipFeatures.airlockQuantity}}) Cost: <strong>{{ 5000 * ship.shipFeatures.airlockQuantity | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.armoredCockpit) {
+                <p>Armored Cockpit Cost: <strong>{{ shipCostBeforeFeaturesFlaws * 0.1  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.artificialGravity) {
+                <p>Artificial Gravity Cost: <strong>{{ ship.techLevel === 22 ? 1000 * ship.mass : 100 * ship.mass  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.computerTranslator) {
+                <p>Computer Translator Cost: <strong>{{ 10000  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.cramped) {
+                <p>Cramped Cost: <strong>{{ 0  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.dockingRingQuantity > 0) {
+                <p>Docking Rings ({{ship.shipFeatures.dockingRingQuantity}}) Cost: <strong>{{ 50000 * ship.shipFeatures.dockingRingQuantity | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.externalSpeakers) {
+                <p>External Speakers Cost: <strong>{{ 1000  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.extremeTemperatureShielding) {
+                <p>Extreme Temperature Shielding Cost: <strong>{{ shipCostBeforeFeaturesFlaws  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.gFoceSuppressionSystem) {
+                <p>G-Force Suppression System Cost: <strong>{{ ship.totalCrew * 100000| number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.gpsMappingSystem) {
+                <p>GPS and Mapping System Cost: <strong>{{ ship.totalCrew * 100000| number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.infraredHUD) {
+                <p>Infrared HUD Cost: <strong>{{ 10000  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.loLiteHUD) {
+                <p>Lo-Lite HUD Cost: <strong>{{ 10000  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.meleeWeapon) {
+                <p>Melee Weapon Cost: <strong>{{ ship.mass * 1000  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.plush) {
+                <p>Plush Cost: <strong>{{ shipCostBeforeFeaturesFlaws  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.shieldedWeapons) {
+                <p>Shielded Weapons Cost: <strong>{{ shipCostBeforeFeaturesFlaws * 0.1  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.spacious) {
+                <p>Spacious Cost: <strong>{{ 0  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.telescopicHUD) {
+                <p>Telescopic HUD Cost: <strong>{{ 100000  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.topQualityWeapons) {
+                <p>Top Quality Weapons Cost: <strong>{{ shipCostBeforeFeaturesFlaws * 0.1  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.shipFeatures.wellShieldedDrives) {
+                <p>Well Shielded Drives Cost: <strong>{{ shipCostBeforeFeaturesFlaws * 0.1  | number:'1.0-0'}} credits</strong></p>
+            }
+
+        </div>
+    </div>
+</div>
