@@ -197,8 +197,88 @@
                 </div>
             </mat-step>
             <mat-step label="Select FTL Drive">
-                <ng-template matStepLabel>Select FTL Drive</ng-template>
                 <!-- Content for Select FTL Drive -->
+                <h2>Select FTL Drive</h2>
+                <mat-radio-group [(ngModel)]="ship.hasFluxDrive" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Flux Drive:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.hasHyperDrive" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>HyperDrive:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                @if (ship.hasHyperDrive){
+                    <div class="slider-container">
+                        <mat-label>HyperDrive Rating</mat-label>
+                        <div matSuffix>{{ ship.hyperDriveRating }}: {{hyperDriveTLD}} LY/day</div>
+                        <mat-slider
+                            id="hyperdrive-rating-slider"
+                            min="0"
+                            max="100"
+                            step="1"
+                            >
+                            <input matSliderThumb [(ngModel)]="ship.hyperDriveRating" (ngModelChange)="updateCost($event)" />
+                        </mat-slider>
+                    </div>
+                }
+                <mat-radio-group [(ngModel)]="ship.hasQuantumDrive" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Quantum Drive:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                @if (ship.hasQuantumDrive) {
+                    <mat-radio-group [(ngModel)]="ship.quantumDriveLevel" class="radio-group" (ngModelChange)="updateCost($event)">
+                        <mat-label>Quantum Drive Level:</mat-label>
+                        <mat-radio-button [value]="1">Level 1</mat-radio-button>
+                        <mat-radio-button [value]="2">Level 2</mat-radio-button>
+                        <mat-radio-button [value]="3">Level 3</mat-radio-button>
+                    </mat-radio-group>
+                }
+                <mat-radio-group [(ngModel)]="ship.hasWarpDrive" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Warp Drive:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-radio-group [(ngModel)]="ship.hasJumpDrive" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Jump Drive:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                @if(ship.hasJumpDrive) {
+                    <mat-form-field appearance="outline" class="cargo-field">
+                        <mat-label>Jump Drive Range (LY)</mat-label>
+                        <input
+                          matInput
+                          type="number"
+                          min="1"
+                          max = "99999999"
+                          [(ngModel)]="ship.jumpDriveRange"
+                          (ngModelChange)="updateCost($event)"
+                          placeholder="Enter range in LY"
+                        />
+                    </mat-form-field>
+                }
+                <mat-radio-group [(ngModel)]="ship.hasSpatialFoldDrive" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Spatial Fold Drive:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                @if(ship.hasSpatialFoldDrive) {
+                    <mat-form-field appearance="outline" class="cargo-field">
+                        <mat-label>Spatial Fold Drive Range (LY)</mat-label>
+                        <input
+                          matInput
+                          type="number"
+                          min="1"
+                          max = "99999999"
+                          [(ngModel)]="ship.spatialFoldDriveRange"
+                          (ngModelChange)="updateCost($event)"
+                          placeholder="Enter range in LY"
+                        />
+                    </mat-form-field>
+                }
                 <div class="step-navigation">
                     <!-- Back Button -->
                     <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
@@ -227,8 +307,30 @@
                 </div>
             </mat-step>
             <mat-step label="Select Payload Pallets">
-                <ng-template matStepLabel>Select Payload Pallets</ng-template>
                 <!-- Content for Select Payload Pallets -->
+                <h2>Select a Payload Pallets</h2>
+                <mat-form-field appearance="outline" class="cargo-field">
+                    <mat-label>Number of Payload Pallets</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="0"
+                      max = "99999999"
+                      [(ngModel)]="ship.payloadPallets"
+                      (ngModelChange)="updateCost($event)"
+                      placeholder="Enter number of payload pallets"
+                    />
+                </mat-form-field>
+                <h2>Select a Payload Pallet Frame Size</h2>
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Frame Size</mat-label>
+                    <mat-select [(ngModel)]="ship.payloadPalletFrameSize" (ngModelChange)="updateCost($event)">
+                      @for (frameSize of frameSizes; track frameSize) {
+                        <mat-option [value]="frameSize">{{ frameSize }}</mat-option>
+                      }
+                    </mat-select>
+                </mat-form-field>                
+                 
                 <div class="step-navigation">
                     <!-- Back Button -->
                     <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
@@ -237,8 +339,8 @@
                 </div>
             </mat-step>
             <mat-step label="Select Special Ordnance">
-                <ng-template matStepLabel>Select Special Ordnance</ng-template>
                 <!-- Content for Select Special Ordnance -->
+                <h2>Not Implemented</h2>
                 <div class="step-navigation">
                     <!-- Back Button -->
                     <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
@@ -247,8 +349,8 @@
                 </div>
             </mat-step>
             <mat-step label="Select Melee Value">
-                <ng-template matStepLabel>Select Melee Value</ng-template>
                 <!-- Content for Select Melee Value -->
+                 <h2>Not Implemented</h2>
                 <div class="step-navigation">
                     <!-- Back Button -->
                     <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
@@ -1154,7 +1256,28 @@
                 <p>Reactionless Drives: <strong>{{ ship.reactionlessDriveUnits| number:'1.0-0'}}</strong>, Cost: <strong>{{ reactionlessDriveCost  | number:'1.0-0'}} credits</strong></p>
             }
             @if (ship.hasRelativeInertialForceGenerator) {
-                <p>Relative Inertial Force Generator Cost: <strong>{{ rifGeneratorCost  | number:'1.0-0'}} credits</strong></p>
+                <p>Relative Inertial Force Generator Cost: <strong>{{ rifGeneratorCost | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.hasFluxDrive) {
+                <p>Flux Drive Cost: <strong>{{ fluxDriveCost | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.hasHyperDrive) {
+                <p>HyperDrive Rating: <strong>{{ hyperDriveTLD | number:'1.0-2'}} LY/day</strong>, Cost: <strong>{{ hyperDriveCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.hasQuantumDrive) {
+                <p>Quantum Drive Level: <strong>{{ ship.quantumDriveLevel | number:'1.0-0'}}</strong>, Cost: <strong>{{ quantumDriveCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.hasWarpDrive) {
+                <p>Warp Drive Maximum Warp: <strong>{{ maximumWarp | number:'1.0-0'}}</strong>, Cost: <strong>{{ warpDriveCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.hasJumpDrive) {
+                <p>Jump Drive Maximum Range: <strong>{{ ship.jumpDriveRange | number:'1.0-0'}} LY</strong>, Cost: <strong>{{ jumpDriveCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.hasSpatialFoldDrive) {
+                <p>Spatial Fold Drive Maximum Range: <strong>{{ ship.spatialFoldDriveRange | number:'1.0-0'}} LY</strong>, Cost: <strong>{{ spatialFoldDriveCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.payloadPallets > 0) {
+                <p>Payload Pallets: <strong>{{ ship.payloadPallets | number:'1.0-0'}}</strong>, Size: <strong>{{ ship.payloadPalletFrameSize}} - MK {{ship.torpedoMark | number:'1.0-0'}} </strong>, Cost: <strong>{{ payloadPalletCost  | number:'1.0-0'}} credits</strong></p>
             }
 
             @if (ship.hasTractorBeam) {

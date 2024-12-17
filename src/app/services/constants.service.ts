@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { ArmorBeltOption, EWTechLevel, FrameSize, HullMaterial, SuperiorAlloy } from "../models/types";
+import { ArmorBeltOption, EWTechLevel, FrameMarkValues, FrameSize, HullMaterial, QuantumDriveValues, SuperiorAlloy, TorpedoDetails } from "../models/types";
 
 @Injectable({
     providedIn: 'root'
@@ -327,8 +327,114 @@ export class ConstantsService {
         28: { tlfVolume: 0.00004, tlfCost: 4, baseCost: 400 },
         29: { tlfVolume: 0.00002, tlfCost: 2, baseCost: 200 },
     };
+    public readonly WARP_DRIVE_CHART: { [techLevel: number]: number } = {
+        20: 1,
+        21: 2,
+        22: 4,
+        23: 6,
+        24: 8,
+        25: 10,
+        26: 10,
+        27: 10,
+        28: 10,
+        29: 10,
+    };
+    public readonly FLUX_DRIVE_TLF: { [techLevel: number]: number } = {
+        20: 0.5,
+        21: 0.4,
+        22: 0.3,
+        23: 0.2,
+        24: 0.1,
+        25: 0.09,
+        26: 0.08,
+        27: 0.07,
+        28: 0.06,
+        29: 0.05,
+    };
+    public readonly HYPERDRIVE_TLF: {[techLevel: number]: { tlf: number; baseCost: number };} = {
+        20: { tlf: 0.6, baseCost: 1_500_000 },
+        21: { tlf: 0.06, baseCost: 150_000 },
+        22: { tlf: 0.05, baseCost: 140_000 },
+        23: { tlf: 0.04, baseCost: 130_000 },
+        24: { tlf: 0.03, baseCost: 120_000 },
+        25: { tlf: 0.02, baseCost: 110_000 },
+        26: { tlf: 0.01, baseCost: 100_000 },
+        27: { tlf: 0.005, baseCost: 50_000 },
+        28: { tlf: 0.0025, baseCost: 25_000 },
+        29: { tlf: 0.00125, baseCost: 12_500 },
+    };
+    public readonly LEVEL_1_QUANTUM_DRIVES: { [techLevel: number | string]: QuantumDriveValues } = {
+        20: { volume: 1000, mass: 500, cost: 50_000_000 },
+        21: { volume: 100, mass: 50, cost: 5_000_000 },
+        22: { volume: 80, mass: 40, cost: 4_000_000 },
+        23: { volume: 60, mass: 30, cost: 3_000_000 },
+        Imperial: { volume: 46, mass: 23, cost: 2_300_000 },
+        24: { volume: 40, mass: 20, cost: 2_000_000 },
+        25: { volume: 20, mass: 10, cost: 1_000_000 },
+        ISC: { volume: 18.6, mass: 9.3, cost: 930_000 },
+        26: { volume: 16, mass: 8, cost: 800_000 },
+        27: { volume: 8, mass: 4, cost: 400_000 },
+        28: { volume: 4, mass: 2, cost: 200_000 },
+        29: { volume: 2, mass: 1, cost: 100_000 },
+    };
+    public readonly LEVEL_2_QUANTUM_DRIVES: { [techLevel: number | string]: QuantumDriveValues } = {
+        20: { volume: 10_000, mass: 5_000, cost: 500_000_000 },
+        21: { volume: 1000, mass: 500, cost: 50_000_000 },
+        22: { volume: 800, mass: 400, cost: 40_000_000 },
+        23: { volume: 600, mass: 300, cost: 30_000_000 },
+        Imperial: { volume: 460, mass: 230, cost: 23_000_000 },
+        24: { volume: 400, mass: 200, cost: 20_000_000 },
+        25: { volume: 200, mass: 100, cost: 10_000_000 },
+        ISC: { volume: 186, mass: 93, cost: 9_300_000 },
+        26: { volume: 160, mass: 80, cost: 8_000_000 },
+        27: { volume: 80, mass: 40, cost: 4_000_000 },
+        28: { volume: 40, mass: 20, cost: 2_000_000 },
+        29: { volume: 20, mass: 10, cost: 1_000_000 },
+    };
+    
+    public readonly LEVEL_3_QUANTUM_DRIVES: { [techLevel: number | string]: QuantumDriveValues } = {
+        20: { volume: 100_000, mass: 50_000, cost: 5_000_000_000 },
+        21: { volume: 10_000, mass: 5_000, cost: 500_000_000 },
+        22: { volume: 8_000, mass: 4_000, cost: 400_000_000 },
+        23: { volume: 6_000, mass: 3_000, cost: 300_000_000 },
+        Imperial: { volume: 4600, mass: 2300, cost: 230_000_000 },
+        24: { volume: 4000, mass: 2000, cost: 200_000_000 },
+        25: { volume: 2000, mass: 1000, cost: 100_000_000 },
+        ISC: { volume: 1860, mass: 930, cost: 93_000_000 },
+        26: { volume: 1600, mass: 800, cost: 80_000_000 },
+        27: { volume: 800, mass: 400, cost: 40_000_000 },
+        28: { volume: 400, mass: 200, cost: 20_000_000 },
+        29: { volume: 200, mass: 100, cost: 10_000_000 },
+    };
+    public readonly TORPEDO_RATINGS: { [techLevel: number]: FrameMarkValues } = {
+        15: { Compact: 5, Small: 10, Medium: 15, Large: 20, UltraLarge: 25 },
+        16: { Compact: 5, Small: 10, Medium: 15, Large: 20, UltraLarge: 25 },
+        17: { Compact: 6, Small: 12, Medium: 18, Large: 24, UltraLarge: 30 },
+        18: { Compact: 6, Small: 12, Medium: 18, Large: 24, UltraLarge: 30 },
+        19: { Compact: 7, Small: 14, Medium: 21, Large: 28, UltraLarge: 35 },
+        20: { Compact: 7, Small: 14, Medium: 21, Large: 28, UltraLarge: 35 },
+        21: { Compact: 8, Small: 16, Medium: 24, Large: 32, UltraLarge: 40 },
+        22: { Compact: 8, Small: 16, Medium: 24, Large: 32, UltraLarge: 40 },
+        23: { Compact: 9, Small: 18, Medium: 27, Large: 35, UltraLarge: 45 },
+        24: { Compact: 9, Small: 18, Medium: 27, Large: 35, UltraLarge: 45 },
+        25: { Compact: 10, Small: 20, Medium: 30, Large: 40, UltraLarge: 50 },
+        26: { Compact: 10, Small: 20, Medium: 30, Large: 40, UltraLarge: 50 },
+        27: { Compact: 12, Small: 24, Medium: 36, Large: 48, UltraLarge: 60 },
+        28: { Compact: 14, Small: 28, Medium: 42, Large: 52, UltraLarge: 68 },
+        29: { Compact: 20, Small: 40, Medium: 60, Large: 80, UltraLarge: 100 },
+      };
+    
+      // Torpedo Specifications
+      public readonly TORPEDO_DETAILS: { [frameSize: string]: TorpedoDetails } = {
+        None: { volume: 0, palletMass: 0, torpedoMass: 0, palletCost: 0, torpedoCost: 0, gsSpeed: '0' },
+        Compact: { volume: 1, palletMass: 1, torpedoMass: 0.25, palletCost: 1000, torpedoCost: 25000, gsSpeed: '18/5K' },
+        Small: { volume: 2, palletMass: 2, torpedoMass: 0.5, palletCost: 2000, torpedoCost: 50000, gsSpeed: '16/4K' },
+        Medium: { volume: 3, palletMass: 3, torpedoMass: 0.75, palletCost: 3000, torpedoCost: 75000, gsSpeed: '14/3K' },
+        Large: { volume: 4, palletMass: 4, torpedoMass: 1, palletCost: 4000, torpedoCost: 100000, gsSpeed: '12/2K' },
+        UltraLarge: { volume: 5, palletMass: 5, torpedoMass: 1.25, palletCost: 5000, torpedoCost: 125000, gsSpeed: '10/1K' },
+      }
 
-    getRatingBonus(rating: number): number {
+      getRatingBonus(rating: number): number {
         if (rating <= 30) {
             return this.RATING_BONUS[rating] || 0; // Lookup for ratings <= 30
         } else {
@@ -401,4 +507,56 @@ export class ConstantsService {
         const values = this.RIF_CHART[techLevel];
         return values !== undefined ? values : { tlfVolume: 0, tlfCost: 0, baseCost: 0 };
     }
+    
+    getWarpDriveLevel(techLevel: number): number {
+        const warpLevel = this.WARP_DRIVE_CHART[techLevel];
+        return warpLevel !== undefined ? warpLevel : 0;
+    }
+
+    getFluxDriveTLF(techLevel: number): number {
+        const tlf = this.FLUX_DRIVE_TLF[techLevel];
+        return tlf !== undefined ? tlf : 0;
+    }
+    getHyperdriveValues(techLevel: number): { tlf: number; baseCost: number } {
+        const values = this.HYPERDRIVE_TLF[techLevel];
+        return values !== undefined ? values : { tlf: 0, baseCost: 0 };
+    }
+
+    calculateTranslightDisplacement(rating: number): number {
+        if (rating < 0) {
+          throw new Error('Rating must be 0 or higher.');
+        }
+    
+        if (rating === 0) {
+          return 0; // Rating 0
+        } else if (rating >= 1 && rating <= 10) {
+          return rating; // 1–10: Direct progression
+        } else if (rating >= 11 && rating <= 20) {
+          return 10 + (rating - 10) * 0.5; // 11–20: 10 + 0.5 * (rating - 10)
+        } else if (rating >= 21 && rating <= 30) {
+          return 15 + (rating - 20) * 0.25; // 21–30: 15 + 0.25 * (rating - 20)
+        } else {
+          return 17.5 + (rating - 30) * 0.1; // 31+: 17.5 + 0.1 * (rating - 30)
+        }
+    }
+
+    getQuantumDriveValues(level: number, techLevel: string | number ): QuantumDriveValues {
+        switch (level) {
+          case 1:
+            return this.LEVEL_1_QUANTUM_DRIVES[techLevel];
+          case 2:
+            return this.LEVEL_2_QUANTUM_DRIVES[techLevel];
+          case 3:
+            return this.LEVEL_3_QUANTUM_DRIVES[techLevel];
+          default:
+            return  {volume: 0,mass: 0, cost: 0};
+        }
+    }
+    getTorpedoRatings(techLevel: number): FrameMarkValues {
+        return this.TORPEDO_RATINGS[techLevel] || { Compact: 0, Small: 0, Medium: 0, Large: 0, UltraLarge: 0 };
+    }
+    
+    getTorpedoDetails(frameSize: FrameSize): TorpedoDetails {
+        return this.TORPEDO_DETAILS[frameSize];
+      }
 }

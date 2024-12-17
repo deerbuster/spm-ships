@@ -66,3 +66,26 @@ export type SuperiorAlloy = {
     passiveEWMax: number;
     activeEWMax: number;
   }
+
+  export interface QuantumDriveValues {
+    volume: number;
+    mass: number;
+    cost: number;
+  }
+  
+  export interface FrameMarkValues {
+    Compact: number;
+    Small: number;
+    Medium: number;
+    Large: number;
+    UltraLarge: number;
+  }
+
+  export interface TorpedoDetails {
+    volume: number;
+    palletMass: number;
+    torpedoMass: number;
+    palletCost: number;
+    torpedoCost: number;
+    gsSpeed: string; // Gs/Speed format
+  }

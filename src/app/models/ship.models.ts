@@ -24,7 +24,19 @@ export type Ship = {
   governingBody: GoverningBody;
   reactionlessDriveUnits: number;
   hasRelativeInertialForceGenerator: boolean;
-  armamentTonnage: number;
+  hasFluxDrive: boolean;
+  hasHyperDrive: boolean;
+  hyperDriveRating: number;
+  hasQuantumDrive: boolean;
+  quantumDriveLevel: number;
+  hasWarpDrive: boolean;
+  hasJumpDrive: boolean;
+  jumpDriveRange: number;
+  hasSpatialFoldDrive: boolean;
+  spatialFoldDriveRange: number;
+  payloadPalletFrameSize: FrameSize;
+  payloadPallets: number;
+  torpedoMark: number;
   hasTractorBeam: boolean;
   tractorBeamSize: FrameSize;
   tractorBeamPower: number;
@@ -71,6 +83,7 @@ export type Ship = {
   submarineStreamlining: false;
   landingGear: false;
   radiationShieldingRating: number;
+  armamentTonnage: number;
   evadeProgramRating: number;
   predictProgramRating: number;
   shipFeatures: ShipFeature;

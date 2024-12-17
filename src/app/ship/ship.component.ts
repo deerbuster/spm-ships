@@ -73,8 +73,19 @@ export class ShipComponent implements OnInit{
       governingBody: 'ISC',
       reactionlessDriveUnits: 1,
       hasRelativeInertialForceGenerator: true,
-      armamentTonnage: 0,
-
+      hasFluxDrive: false,
+      hasHyperDrive: false,
+      hyperDriveRating: 0,
+      hasQuantumDrive: true,
+      quantumDriveLevel: 1,
+      hasWarpDrive: false,
+      hasJumpDrive: false,
+      jumpDriveRange: 0,
+      hasSpatialFoldDrive: false,
+      spatialFoldDriveRange: 0,
+      payloadPalletFrameSize: 'None' ,
+      payloadPallets: 0,
+      torpedoMark: 0,
       hasTractorBeam: false,
       tractorBeamPower: 0,
       tractorBeamSize: 'None',
@@ -121,6 +132,7 @@ export class ShipComponent implements OnInit{
       submarineStreamlining: false,
       landingGear: false,
       radiationShieldingRating: 0,
+      armamentTonnage: 0,
       evadeProgramRating: 0,
       predictProgramRating: 0,
       shipFeatures: {
@@ -166,6 +178,15 @@ export class ShipComponent implements OnInit{
   hardPointCost: number = 0;
   reactionlessDriveCost: number = 0;
   rifGeneratorCost: number = 0;
+  fluxDriveCost: number = 0;
+  hyperDriveCost: number = 0;
+  hyperDriveTLD: number = 0;
+  quantumDriveCost: number = 0;
+  warpDriveCost: number = 0;
+  maximumWarp: number = 0;
+  jumpDriveCost: number = 0;
+  spatialFoldDriveCost: number = 0;
+  payloadPalletCost: number = 0;
   maxHUDBonus: number = 0;
 
   tractorBeamCost: number = 0;
@@ -304,11 +325,110 @@ export class ShipComponent implements OnInit{
       this.rifGeneratorCost = 0;
     }
     // Step 7  Select FTL Drive
+    if (this.ship.hasFluxDrive) {
+      const fluxDriveTLF = this.constantsService.getFluxDriveTLF(this.ship.techLevel);
+      this.ship.currentVolume += 15000 + this.ship.volume * fluxDriveTLF;
+      this.ship.currentMass += 5000 + this.ship.mass * fluxDriveTLF;
+      this.fluxDriveCost = 5000000 + this.ship.mass * 1000;
+      this.ship.cost += this.fluxDriveCost;
+      this.ship.powerNeeds += this.ship.mass / 20;
+      this.ship.crew.technicians += Math.ceil((5000 + this.ship.mass * fluxDriveTLF) / 100);
+    } else {
+      this.fluxDriveCost = 0;
+    }
+    if (this.ship.hasHyperDrive) {
+      const hyperDriveTLFData = this.constantsService.getHyperdriveValues(this.ship.techLevel);
+      this.hyperDriveTLD = this.constantsService.calculateTranslightDisplacement(this.ship.hyperDriveRating);
+      this.ship.currentVolume += 50 + (this.ship.volume * hyperDriveTLFData.tlf * this.ship.hyperDriveRating);
+      this.ship.currentMass += 15 + (this.ship.mass * hyperDriveTLFData.tlf * this.ship.hyperDriveRating);
+      this.hyperDriveCost = hyperDriveTLFData.baseCost + (this.ship.mass * 30 * this.ship.hyperDriveRating);
+      this.ship.cost += this.hyperDriveCost;
+      this.ship.crew.technicians += Math.ceil((15 + (this.ship.mass * hyperDriveTLFData.tlf * this.ship.hyperDriveRating)) / 100);
+    } else {
+      this.hyperDriveCost = 0;
+      this.hyperDriveTLD = 0;
+    }
+    if (this.ship.hasQuantumDrive) {
+      const quantumDriveData = this.constantsService.getQuantumDriveValues(this.ship.quantumDriveLevel, this.ship.governingBody === 'Other' ? this.ship.techLevel : this.ship.governingBody);
+      this.ship.crew.technicians += this.ship.quantumDriveLevel === 1 ? 1 : this.ship.quantumDriveLevel === 2 ? 5 : 10;
+      this.ship.powerNeeds += this.ship.quantumDriveLevel === 1 ? 1000 : this.ship.quantumDriveLevel === 2 ? 10000 : 100000;
+      this.ship.currentVolume += quantumDriveData.volume;
+      this.ship.currentMass += quantumDriveData.mass;
+      this.quantumDriveCost = quantumDriveData.cost;
+      this.ship.cost += this.quantumDriveCost;
+    } else {
+      this.quantumDriveCost = 0;
+    }
+    if (this.ship.hasWarpDrive) {
+      this.ship.currentVolume += this.ship.volume / 5;
+      this.ship.currentMass += this.ship.mass / 5;
+      this.warpDriveCost = this.ship.mass * 1000;
+      this.ship.cost += this.warpDriveCost;
+      this.ship.crew.technicians += Math.ceil((this.ship.mass / 5) / 1000);
+      this.maximumWarp = this.constantsService.getWarpDriveLevel(this.ship.techLevel);
+    } else {
+      this.warpDriveCost = 0;
+      this.maximumWarp = 0;
+    }
+    if (this.ship.hasJumpDrive) {
+      this.ship.currentVolume += this.ship.volume * 0.5;
+      this.ship.currentMass += this.ship.mass * 0.5;
+      this.jumpDriveCost = this.ship.mass * 10000;
+      this.ship.cost += this.jumpDriveCost;
+      this.ship.powerNeeds += this.ship.jumpDriveRange * 1000;
+      this.ship.crew.technicians += Math.ceil((this.ship.mass * 0.3) / 10000);
+    } else {
+      this.jumpDriveCost = 0;
+    }
+    if (this.ship.hasSpatialFoldDrive) {
+      this.ship.currentVolume += this.ship.volume * 0.3;
+      this.ship.currentMass += this.ship.mass * 0.3;
+      this.spatialFoldDriveCost = this.ship.mass * 1000;
+      this.ship.cost += this.spatialFoldDriveCost;
+      this.ship.powerNeeds += this.ship.spatialFoldDriveRange * 10000;
+      this.ship.crew.technicians += Math.ceil((this.ship.mass * 0.3) / 10000);
+    } else {
+      this.spatialFoldDriveCost = 0;
+      this.ship.spatialFoldDriveRange = 0;
+    }
     // Step 8  Select Armaments
     // Step 9  Determine Targeting Bonus
     // Step 10  Select Payload Pallets
+    if (this.ship.payloadPallets > 0) {
+      const payloadPalletData = this.constantsService.getTorpedoDetails(this.ship.payloadPalletFrameSize);
+      const payloadPalletRating = this.constantsService.getTorpedoRatings(this.ship.techLevel);
+      this.ship.currentVolume += this.ship.payloadPallets * payloadPalletData.volume;
+      this.ship.currentMass += this.ship.payloadPallets * (payloadPalletData.palletMass + payloadPalletData.torpedoMass);
+      this.payloadPalletCost = this.ship.payloadPallets * (payloadPalletData.torpedoCost + payloadPalletData.palletCost);
+      this.ship.cost += this.payloadPalletCost;
+
+      switch (this.ship.payloadPalletFrameSize) {
+          case 'Compact':
+            this.ship.torpedoMark = payloadPalletRating.Compact;
+            break;
+          case 'Small':
+            this.ship.torpedoMark = payloadPalletRating.Small;
+            break;
+          case 'Medium':
+            this.ship.torpedoMark = payloadPalletRating.Medium;
+            break;
+          case 'Large':
+            this.ship.torpedoMark = payloadPalletRating.Large;
+            break;
+          case 'UltraLarge':
+            this.ship.torpedoMark = payloadPalletRating.UltraLarge;
+            break;
+          default:
+            this.ship.torpedoMark = 0;
+            break;
+      }
+    } else {
+      this.payloadPalletCost = 0;
+    }
     // Step 11  Select Special Ordnance
+      // NOT Implemented
     // Step 12  Select Melee Value
+      // NOT Implemented
     // Step 13  Select Tractor Beam Projectors
     if(this.ship.hasTractorBeam) {
       this.ship.tractorBeamPower = this.constantsService.getTractorBeamPower(this.ship.techLevel, this.ship.tractorBeamSize) ;
