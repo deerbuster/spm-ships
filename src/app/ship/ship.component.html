@@ -1244,7 +1244,7 @@
                 <p>Reinforcement Required: <strong>{{ ship.reinforcement*100 | number:'1.0-2'}}%</strong>, Cost: <strong>{{ reinforcementCost  | number:'1.0-0'}} credits</strong></p>
             }
             @if (ship.strongPoints >=0) {
-                <p>Strong Points: <strong>{{ ship.strongPoints+(ship.mass/100)  | number:'1.0-0'}}</strong>, Cost: <strong>{{ strongPointCost  | number:'1.0-0'}} credits</strong></p>
+                <p>Strong Points: <strong>{{ ship.strongPoints + baseStrongPoints  | number:'1.0-0'}}</strong>, Cost: <strong>{{ strongPointCost  | number:'1.0-0'}} credits</strong></p>
             }
             @if (ship.hardPoints >=0) {
                 <p>Hard Points: <strong>{{ ship.hardPoints  | number:'1.0-0'}}</strong>, Cost: <strong>{{ hardPointCost  | number:'1.0-0'}} credits</strong></p>

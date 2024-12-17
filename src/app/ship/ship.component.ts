@@ -175,6 +175,7 @@ export class ShipComponent implements OnInit{
   reinforcementCost: number = 0;
   armorBeltCost: number = 0;
   strongPointCost: number = 0;
+  baseStrongPoints: number = 2;
   hardPointCost: number = 0;
   reactionlessDriveCost: number = 0;
   rifGeneratorCost: number = 0;
@@ -257,6 +258,7 @@ export class ShipComponent implements OnInit{
     // Step 2 Mass/Volume
     const volumeMultiplier = this.ship.shipType === 'Submarine Vehicle' ? 2 : 3;
     this.ship.volume = this.ship.mass * volumeMultiplier;
+    this.baseStrongPoints = Math.max(2, Math.floor(this.ship.mass / 100));
 
     // Step 3 Hull
     const materialCostMultiplier = this.ship.hullMaterial?.costMultiplier || 1.0;
