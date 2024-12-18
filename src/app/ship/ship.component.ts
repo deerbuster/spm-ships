@@ -7,9 +7,11 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatSelectModule} from '@angular/material/select';
 import {MatSliderModule} from '@angular/material/slider';
 import {MatRadioModule} from '@angular/material/radio';
+import {MatIconModule} from '@angular/material/icon';
+import {MatCheckboxModule} from '@angular/material/checkbox';
 import {FormsModule} from '@angular/forms';
 import { Ship } from '../models/ship.models';
-import { ArmorBeltOption, EWTechLevel, HullMaterial, PowerSource, ShipType, SuperiorAlloy } from '../models/types';
+import { ArmorBeltOption, EWTechLevel, FiringMechanism, FrameValues, HullMaterial, Mount, PowerSource, ShipType, SuperiorAlloy, TargetingGroup } from '../models/types';
 import { ConstantsService } from '../services/constants.service';
 
 @Component({
@@ -19,12 +21,14 @@ import { ConstantsService } from '../services/constants.service';
     CommonModule,
     FormsModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatStepperModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
     MatSliderModule,
-    MatRadioModule
+    MatRadioModule,
+    MatIconModule
     ],
   providers: [DecimalPipe],
   templateUrl: './ship.component.html',
@@ -58,6 +62,8 @@ export class ShipComponent implements OnInit{
         additional: 0,
       },
       totalCrew: 3,
+      hasCrewOverride: false,
+      crewOverride: 0,
       totalPassengers: 0,
       hullMaterial: this.hullMaterials[0],
       superiorAlloy: this.superiorAlloys[0],
@@ -70,19 +76,21 @@ export class ShipComponent implements OnInit{
       hardPoints: 0,
       armorBelt: this.armorBeltOptions[0],
       hits: 0,
-      governingBody: 'ISC',
+      governingBody: 'Other',
       reactionlessDriveUnits: 1,
       hasRelativeInertialForceGenerator: true,
       hasFluxDrive: false,
       hasHyperDrive: false,
       hyperDriveRating: 0,
-      hasQuantumDrive: true,
+      hasQuantumDrive: false,
       quantumDriveLevel: 1,
       hasWarpDrive: false,
       hasJumpDrive: false,
       jumpDriveRange: 0,
       hasSpatialFoldDrive: false,
       spatialFoldDriveRange: 0,
+      mounts: [],
+      targetingGroups: [],
       payloadPalletFrameSize: 'None' ,
       payloadPallets: 0,
       torpedoMark: 0,
@@ -111,6 +119,7 @@ export class ShipComponent implements OnInit{
       lifeSupport: true,
       aiSystem: false,
       aiCrewmembers: 0,
+      hasCrewQuarters: true,
       firstClassStaterooms: 0,
       standardStaterooms: 0,
       lowMilitaryStaterooms: 0,
@@ -168,15 +177,19 @@ export class ShipComponent implements OnInit{
   techLevels: number[] = Array.from({ length: 15 }, (_, i) => i + 15); // Options from 15 to 29
   totalCostMultiplier: number = 0;
   powerSources: PowerSource[] = ['Fission Reactor', 'Fusion Reactor', 'Matter/Antimatter Reactor', 'Vacuum Power Generator', 'Cosmic Power Generator'];
+  firingMechanismOptions: FiringMechanism[] = ['Autocannon','Projectile Cannon','Laser Cannon','Blaster Cannon','Disruptor Cannon','Ion Cannon','Plasma Cannon','Missile Launcher'];
+  hudCosts: number[] = [10000, 20000, 60000, 240000, 1200000];
 
   shipCostBeforeFeaturesFlaws: number = 0;
   hullMaterialCost: number = 0;
+  unloadedAcceleration: number =0;
   superiorAlloyCost: number = 0;
   reinforcementCost: number = 0;
   armorBeltCost: number = 0;
   strongPointCost: number = 0;
   baseStrongPoints: number = 2;
   hardPointCost: number = 0;
+  hardPointNeeds: number = 0
   reactionlessDriveCost: number = 0;
   rifGeneratorCost: number = 0;
   fluxDriveCost: number = 0;
@@ -187,8 +200,9 @@ export class ShipComponent implements OnInit{
   maximumWarp: number = 0;
   jumpDriveCost: number = 0;
   spatialFoldDriveCost: number = 0;
+  private nextMountId: number = 1;
+  private nextTargetingGroupId: number = 1;
   payloadPalletCost: number = 0;
-  maxHUDBonus: number = 0;
 
   tractorBeamCost: number = 0;
   tightBeamCommRigCost: number = 0;
@@ -251,12 +265,13 @@ export class ShipComponent implements OnInit{
       pilot: 3,
       additional: 0,
     };
+    this.hardPointNeeds = 0;
     this.ship.totalCrew = 3;
     this.ship.totalPassengers = 0;
     this.ewTechLevel = this.constantsService.getElectronicWarfareValues(this.ship.governingBody === 'Other' ? this.ship.techLevel : this.ship.governingBody);
     console.clear();
     // Step 2 Mass/Volume
-    const volumeMultiplier = this.ship.shipType === 'Submarine Vehicle' ? 2 : 3;
+    const volumeMultiplier: number = this.ship.shipType === 'Submarine Vehicle' || this.ship.shipFeatures.cramped ? 2 : 3;
     this.ship.volume = this.ship.mass * volumeMultiplier;
     this.baseStrongPoints = Math.max(2, Math.floor(this.ship.mass / 100));
 
@@ -274,33 +289,45 @@ export class ShipComponent implements OnInit{
     this.hullMaterialCost = this.ship.mass * 100 * totalHullCostModifier * techLevelCostModifier;
     this.superiorAlloyCost = this.hullMaterialCost - (this.ship.mass * 100 * materialCostMultiplier * techLevelCostModifier);
     this.ship.cost = this.hullMaterialCost;
+    console.log('3: Cost - Hull: ', this.ship.cost);
+
     //TODO: increase minimum tonnage for the % hull maximum, if chosen for Superior Alloy
     this.checkReinforcementNeeds();
     if (this.ship.maxAcceleration > 1) {
       if (this.ship.reinforcement > 0) {
         this.reinforcementCost = this.ship.maxAcceleration * this.ship.reinforcement * this.hullMaterialCost * totalHullCostModifier;
         this.ship.cost += this.reinforcementCost;
+        console.log('3: Cost - Reinforcement: ', this.ship.cost);
       }
     }
 
     // Step 4 Strong and Hard Points
     const retrofitPointMultiplier: number = this.ship.modificationType === 'Retrofit' ? this.ship.hullMaterial.costMultiplier : 1;
+    let hardPoints: number = this.ship.hardPoints;
+    if (this.hardPointNeeds > this.ship.hardPoints) {
+      hardPoints = this.hardPointNeeds;
+    }
+
     this.strongPointCost = (this.ship.strongPoints * this.ship.hullMaterial.strongPointCost * retrofitPointMultiplier);
-    this.hardPointCost = (this.ship.hardPoints * this.ship.hullMaterial.hardPointCost * retrofitPointMultiplier);
+    this.hardPointCost = (hardPoints * this.ship.hullMaterial.hardPointCost * retrofitPointMultiplier);
     this.ship.cost += this.strongPointCost + this.hardPointCost;
+    console.log('4: Cost - Soft/Hardpoints: ', this.ship.cost);
+
     this.ship.currentVolume += (this.ship.strongPoints * this.ship.hullMaterial.strongPointVolumeMass);
-    this.ship.currentVolume += (this.ship.hardPoints * this.ship.hullMaterial.hardPointVolumeMass);
+    this.ship.currentVolume += (hardPoints * this.ship.hullMaterial.hardPointVolumeMass);
     this.ship.currentMass += (this.ship.strongPoints * this.ship.hullMaterial.strongPointVolumeMass);
     console.log('4SP: Current Mass: ', this.ship.currentMass);
-    this.ship.currentMass += (this.ship.hardPoints * this.ship.hullMaterial.hardPointVolumeMass);
+    this.ship.currentMass += (hardPoints * this.ship.hullMaterial.hardPointVolumeMass);
     console.log('4HP: Current Mass: ', this.ship.currentMass);
     // Step 5 Armor Belt
     this.ship.hits = this.ship.mass + this.ship.mass * (this.ship.armorBelt.hitsMultiplier / 100);
-    this.ship.currentMass += (this.ship.volume * materialVolumeFactor) * (this.ship.armorBelt.hitsMultiplier / 100);
+    this.ship.currentMass += this.ship.mass  * (this.ship.armorBelt.hitsMultiplier / 100);
     console.log('5: Current Mass: ', this.ship.currentMass);
     const sameTechMultiplier = this.ship.techLevel === this.ship.hullMaterial.techLevel ? 10 : 1;
     this.armorBeltCost = this.ship.mass * this.ship.armorBelt.costMultiplier * sameTechMultiplier;
     this.ship.cost += this.armorBeltCost;
+    console.log('4: Cost - Armor Belt: ', this.ship.cost);
+
     // Step 6  Select Drives
     if (this.ship.reactionlessDriveUnits > 0) {
       const reactionlessDriveData = this.constantsService.getReactionlessDriveValues(this.ship.governingBody === 'Other' ? this.ship.techLevel : this.ship.governingBody);
@@ -309,9 +336,12 @@ export class ShipComponent implements OnInit{
       this.ship.currentMass += reactionlessDriveData.mass * reactionlessDriveThrust / 100;
       console.log('6RD: Current Mass: ', this.ship.currentMass);
       this.ship.crew.technicians += Math.ceil(reactionlessDriveData.crew * reactionlessDriveThrust / 100);
+      this.ship.totalCrew += Math.ceil(reactionlessDriveData.crew * reactionlessDriveThrust / 100);
       this.ship.powerNeeds += reactionlessDriveData.powerCost * reactionlessDriveThrust / 100;
       this.reactionlessDriveCost = this.ship.reactionlessDriveUnits * 35000;
       this.ship.cost += this.reactionlessDriveCost;
+      console.log('6: Cost - Drive: ', this.ship.cost);
+
     } else {
       this.reactionlessDriveCost = 0;
     }
@@ -322,6 +352,7 @@ export class ShipComponent implements OnInit{
       console.log('6RG: Current Mass: ', this.ship.currentMass);
       this.rifGeneratorCost = rifGeneratorData.baseCost + this.ship.mass * rifGeneratorData.tlfCost;
       this.ship.cost += this.rifGeneratorCost;
+      console.log('6: Cost - RIF: ', this.ship.cost);
       this.ship.powerNeeds += this.ship.mass / 10000 * this.ship.maxAcceleration;
     } else {
       this.rifGeneratorCost = 0;
@@ -333,8 +364,10 @@ export class ShipComponent implements OnInit{
       this.ship.currentMass += 5000 + this.ship.mass * fluxDriveTLF;
       this.fluxDriveCost = 5000000 + this.ship.mass * 1000;
       this.ship.cost += this.fluxDriveCost;
+      console.log('7: Cost - FTL Flux: ', this.ship.cost);
       this.ship.powerNeeds += this.ship.mass / 20;
       this.ship.crew.technicians += Math.ceil((5000 + this.ship.mass * fluxDriveTLF) / 100);
+      this.ship.totalCrew = Math.ceil((5000 + this.ship.mass * fluxDriveTLF) / 100);
     } else {
       this.fluxDriveCost = 0;
     }
@@ -345,7 +378,9 @@ export class ShipComponent implements OnInit{
       this.ship.currentMass += 15 + (this.ship.mass * hyperDriveTLFData.tlf * this.ship.hyperDriveRating);
       this.hyperDriveCost = hyperDriveTLFData.baseCost + (this.ship.mass * 30 * this.ship.hyperDriveRating);
       this.ship.cost += this.hyperDriveCost;
+      console.log('7: Cost - FTL Hyper: ', this.ship.cost);
       this.ship.crew.technicians += Math.ceil((15 + (this.ship.mass * hyperDriveTLFData.tlf * this.ship.hyperDriveRating)) / 100);
+      this.ship.totalCrew += Math.ceil((15 + (this.ship.mass * hyperDriveTLFData.tlf * this.ship.hyperDriveRating)) / 100);
     } else {
       this.hyperDriveCost = 0;
       this.hyperDriveTLD = 0;
@@ -353,10 +388,12 @@ export class ShipComponent implements OnInit{
     if (this.ship.hasQuantumDrive) {
       const quantumDriveData = this.constantsService.getQuantumDriveValues(this.ship.quantumDriveLevel, this.ship.governingBody === 'Other' ? this.ship.techLevel : this.ship.governingBody);
       this.ship.crew.technicians += this.ship.quantumDriveLevel === 1 ? 1 : this.ship.quantumDriveLevel === 2 ? 5 : 10;
+      this.ship.totalCrew += this.ship.quantumDriveLevel === 1 ? 1 : this.ship.quantumDriveLevel === 2 ? 5 : 10;
       this.ship.powerNeeds += this.ship.quantumDriveLevel === 1 ? 1000 : this.ship.quantumDriveLevel === 2 ? 10000 : 100000;
       this.ship.currentVolume += quantumDriveData.volume;
       this.ship.currentMass += quantumDriveData.mass;
       this.quantumDriveCost = quantumDriveData.cost;
+      console.log('7: Cost - FTL Quantum: ', this.ship.cost);
       this.ship.cost += this.quantumDriveCost;
     } else {
       this.quantumDriveCost = 0;
@@ -366,7 +403,9 @@ export class ShipComponent implements OnInit{
       this.ship.currentMass += this.ship.mass / 5;
       this.warpDriveCost = this.ship.mass * 1000;
       this.ship.cost += this.warpDriveCost;
+      console.log('7: Cost - FTL Warp: ', this.ship.cost);
       this.ship.crew.technicians += Math.ceil((this.ship.mass / 5) / 1000);
+      this.ship.totalCrew += Math.ceil((this.ship.mass / 5) / 1000);
       this.maximumWarp = this.constantsService.getWarpDriveLevel(this.ship.techLevel);
     } else {
       this.warpDriveCost = 0;
@@ -377,8 +416,10 @@ export class ShipComponent implements OnInit{
       this.ship.currentMass += this.ship.mass * 0.5;
       this.jumpDriveCost = this.ship.mass * 10000;
       this.ship.cost += this.jumpDriveCost;
+      console.log('7: Cost - FTL Jump: ', this.ship.cost);
       this.ship.powerNeeds += this.ship.jumpDriveRange * 1000;
       this.ship.crew.technicians += Math.ceil((this.ship.mass * 0.3) / 10000);
+      this.ship.totalCrew += Math.ceil((this.ship.mass * 0.3) / 10000);
     } else {
       this.jumpDriveCost = 0;
     }
@@ -387,21 +428,47 @@ export class ShipComponent implements OnInit{
       this.ship.currentMass += this.ship.mass * 0.3;
       this.spatialFoldDriveCost = this.ship.mass * 1000;
       this.ship.cost += this.spatialFoldDriveCost;
+      console.log('7: Cost - FTL Spatial: ', this.ship.cost);
       this.ship.powerNeeds += this.ship.spatialFoldDriveRange * 10000;
       this.ship.crew.technicians += Math.ceil((this.ship.mass * 0.3) / 10000);
+      this.ship.totalCrew += Math.ceil((this.ship.mass * 0.3) / 10000);
     } else {
       this.spatialFoldDriveCost = 0;
       this.ship.spatialFoldDriveRange = 0;
     }
     // Step 8  Select Armaments
+      this.ship.cost += this.armamentsCost;
+      console.log('8: Cost - Armaments: ', this.ship.cost);
+      this.ship.currentMass += this.totalMountMass;
+      console.log('8: Current Mass: ', this.ship.currentMass);
+      this.ship.armamentTonnage = this.totalMountMass;
+      this.ship.currentVolume += this.totalMountVolume;
+      this.ship.powerNeeds += this.totalMountPowerNeeds;
+      this.ship.mounts.forEach((mount) => {
+        if (mount.mountType === 'Turret Mount') {
+          this.hardPointNeeds += 1;
+          console.log('8TM: Turret Mount: ', this.hardPointNeeds);
+        } else if (mount.firingMechanism === 'Autocannon' || mount.firingMechanism === 'Missile Launcher' || mount.frameSize !== 'Compact') {
+          this.hardPointNeeds += 1;
+          console.log('8nTM: Autocannon or Missile Launcher or Non Compact: ', this.hardPointNeeds);
+        }
+      });
     // Step 9  Determine Targeting Bonus
+    if(this.ship.targetingGroups.length > 0) {
+      this.ship.cost += this.targetingGroupCost;
+      console.log('8: Cost - HUD: ', this.ship.cost);
+    }
     // Step 10  Select Payload Pallets
     if (this.ship.payloadPallets > 0) {
       const payloadPalletData = this.constantsService.getTorpedoDetails(this.ship.payloadPalletFrameSize);
       const payloadPalletRating = this.constantsService.getTorpedoRatings(this.ship.techLevel);
       this.ship.currentVolume += this.ship.payloadPallets * payloadPalletData.volume;
-      this.ship.currentMass += this.ship.payloadPallets * (payloadPalletData.palletMass + payloadPalletData.torpedoMass);
+      const payloadPalletMass: number = this.ship.payloadPallets * (payloadPalletData.palletMass + payloadPalletData.torpedoMass);
+      this.ship.currentMass += payloadPalletMass;
+      console.log('10: Current Mass: ', this.ship.currentMass);
+      this.ship.armamentTonnage += payloadPalletMass;
       this.payloadPalletCost = this.ship.payloadPallets * (payloadPalletData.torpedoCost + payloadPalletData.palletCost);
+      console.log('8: Cost - FTL Hyper: ', this.ship.cost);
       this.ship.cost += this.payloadPalletCost;
 
       switch (this.ship.payloadPalletFrameSize) {
@@ -478,6 +545,7 @@ export class ShipComponent implements OnInit{
       this.ship.cost += this.quantumCommRigCost;
       this.ship.powerNeeds += 1;
       this.ship.crew.technicians += 3;
+      this.ship.totalCrew += 3;
       this.quantumCommRigRange = this.constantsService.getQuantumCommRange(this.ship.governingBody === 'Other' ? this.ship.techLevel : this.ship.governingBody);
     } else {
       this.quantumCommRigCost = 0;
@@ -506,6 +574,7 @@ export class ShipComponent implements OnInit{
       this.sensorSuiteCost = 100000;
       this.ship.cost += this.sensorSuiteCost;
       this.ship.crew.technicians += 3;
+      this.ship.totalCrew += 3;
       this.ship.powerNeeds += 1;
     }
     // Step 16  Select Electronic Warfare
@@ -518,11 +587,12 @@ export class ShipComponent implements OnInit{
     if (this.ship.activeEWRating > 0) {
       this.ship.currentVolume += this.ship.activeEWRating * 0.03;
       this.ship.currentMass += this.ship.activeEWRating * 0.01;
-      console.log('17AEW: Current Mass: ', this.ship.currentMass);
+      console.log('16AEW: Current Mass: ', this.ship.currentMass);
       this.activeEWCost = this.ship.activeEWRating * 5000;
       this.ship.cost += this.activeEWCost;
       this.ship.powerNeeds += this.ship.activeEWRating;
       this.ship.crew.technicians += this.ship.EWOfficers;
+      this.ship.totalCrew += this.ship.EWOfficers;
     } else {
       this.activeEWCost = 0;
     }
@@ -536,6 +606,7 @@ export class ShipComponent implements OnInit{
       this.defensiveScreenCost = this.ship.mass * 20 * this.ship.defensiveScreenRating * defensiveScreenTechLevelModifier;
       this.ship.powerNeeds += this.ship.defensiveScreenRating;
       this.ship.crew.technicians += Math.ceil((this.ship.mass * 0.003 * this.ship.defensiveScreenRating * defensiveScreenTechLevelModifier)/10);
+      this.ship.totalCrew += Math.ceil((this.ship.mass * 0.003 * this.ship.defensiveScreenRating * defensiveScreenTechLevelModifier)/10);
       this.ship.cost += this.defensiveScreenCost;
     } else {
       this.defensiveScreenCost = 0;
@@ -588,6 +659,7 @@ export class ShipComponent implements OnInit{
           this.ship.fuelMassPerWeek = 0;
           this.ship.fuelVolumePerWeek = 0;
           this.ship.crew.technicians += Math.ceil((900 + this.ship.powerRating * 0.003)/100);
+          this.ship.totalCrew += Math.ceil((900 + this.ship.powerRating * 0.003)/100);
           break;
         case 'Fusion Reactor':
           const frDetails = this.constantsService.FUSION_REACTOR[this.ship.techLevel];
@@ -597,6 +669,7 @@ export class ShipComponent implements OnInit{
           this.ship.fuelVolumePerWeek = this.ship.powerRating * frDetails.fuelMass;
           this.ship.fuelMassPerWeek = this.ship.powerRating * frDetails.fuelVolume;
           this.ship.crew.technicians += Math.ceil(this.ship.powerRating * frDetails.crew);
+          this.ship.totalCrew += Math.ceil(this.ship.powerRating * frDetails.crew);
           this.powerSourceCost = 50000 + this.ship.powerRating * 5000;
           break;
         case 'Matter/Antimatter Reactor':
@@ -607,6 +680,7 @@ export class ShipComponent implements OnInit{
           this.ship.fuelVolumePerWeek = this.ship.powerRating * marDetails.fuelMass;
           this.ship.fuelMassPerWeek = this.ship.powerRating * marDetails.fuelVolume;
           this.ship.crew.technicians += Math.ceil(this.ship.powerRating * marDetails.crew);
+          this.ship.totalCrew += Math.ceil(this.ship.powerRating * marDetails.crew);
           this.powerSourceCost = 500000 + this.ship.powerRating * 5000;
           break;
         case 'Cosmic Power Generator':
@@ -624,6 +698,7 @@ export class ShipComponent implements OnInit{
           this.ship.currentMass += this.ship.powerRating * vpgDetails.mass;
           console.log('21VPG: Current Mass: ', this.ship.currentMass);
           this.ship.crew.technicians += Math.ceil(this.ship.powerRating * vpgDetails.crew);
+          this.ship.totalCrew += Math.ceil(this.ship.powerRating * vpgDetails.crew);
           this.powerSourceCost = 10000 + this.ship.powerRating * 100;
           this.ship.fuelVolumePerWeek = 0;
           this.ship.fuelMassPerWeek = 0;
@@ -634,11 +709,23 @@ export class ShipComponent implements OnInit{
       this.powerSourceCost = 0;
     }
     // Step 22  Determine Minimum Crew
-    const modifiers = this.constantsService.CREW_MODIFIERS[this.ship.techLevel];
-    this.ship.crew.general = this.ship.mass * modifiers.general;
-    this.ship.totalCrew += this.ship.mass * modifiers.general;
-    this.ship.crew.gunneryTechnician = this.ship.armamentTonnage * modifiers.gunnery;
-    this.ship.totalCrew += this.ship.armamentTonnage * modifiers.gunnery;
+    if (this.ship.hasCrewOverride) {
+      this.ship.totalCrew = this.ship.crewOverride;
+      this.ship.crew.technicians = 0;
+      this.ship.crew.pilot = 1;
+      this.ship.crew.gunneryTechnician = 0;
+      this.ship.crew.gunner = this.ship.targetingGroups.length;
+      this.ship.crew.general = 0;
+      this.ship.crew.additional = 0;
+    } else {
+      const modifiers = this.constantsService.CREW_MODIFIERS[this.ship.techLevel];
+      this.ship.crew.general = this.ship.mass * modifiers.general;
+      this.ship.totalCrew += this.ship.mass * modifiers.general;
+      this.ship.crew.gunneryTechnician = Math.ceil(this.ship.armamentTonnage * modifiers.gunnery);
+      this.ship.totalCrew += Math.ceil(this.ship.armamentTonnage * modifiers.gunnery);
+      this.ship.crew.gunner = this.ship.targetingGroups.length;
+      this.ship.totalCrew += this.ship.targetingGroups.length;
+    }
     // Step 23  Determine Crewmember Control Areas
     if ((this.ship.totalCrew - this.ship.crew.general) > 0) {
       this.ship.currentVolume += (this.ship.totalCrew - this.ship.crew.general) * 9;
@@ -660,7 +747,7 @@ export class ShipComponent implements OnInit{
       this.aiSystemCost = 0;
     }
     // Step 25  Select Crew Quarters
-    if (this.ship.totalCrew > 0) {
+    if (this.ship.totalCrew > 0 && this.ship.hasCrewQuarters) {
       this.ship.currentVolume += this.ship.totalCrew * 9;
       this.ship.currentMass += this.ship.totalCrew * 3;
       console.log('25: Current Mass: ', this.ship.currentMass);
@@ -819,6 +906,7 @@ export class ShipComponent implements OnInit{
 
     // Step 36  Select Cargo Hold
     if (this.ship.cargoHoldMass > 0){
+      this.unloadedAcceleration = (this.ship.mass * this.ship.maxAcceleration)/ (this.ship.mass - this.ship.cargoHoldMass);
       this.ship.currentMass += this.ship.cargoHoldMass;
       console.log('36: Current Mass: ', this.ship.currentMass);
     }
@@ -985,5 +1073,278 @@ export class ShipComponent implements OnInit{
       this.ship.pointDefenseRating = value; // Accept valid values
     }
     this.updateCost();
+  }
+  
+  addMount(): void {
+    const newMount: Mount = {
+      mountId: this.nextMountId++,
+      targetingGroupId: -1,
+      firingMechanism: 'Autocannon',
+      isPulseLaser: false,
+      count: 1,
+      countText: '',
+      mountType: 'Fixed Mount',
+      frameSize: 'Compact',
+      firingMechanismCost: 0,
+      weaponMark: 0,
+      magazines: 0,
+      shotsPerMagazine: 0,
+      shots: 0,
+      mass: 0,
+      volume: 0,
+      powerNeeds: 0,
+      mountCost: 0,
+    };
+    this.ship.mounts.push(newMount);
+    this.updateTargetingBonus();
+    this.updateCost();
+  }
+
+  addTargetingGroup(): void {
+    const targetingGroupId: number = this.nextTargetingGroupId++
+    const newTargetingGroup: TargetingGroup = {
+      targetingGroupId: targetingGroupId,
+      hudCost: 0,
+      linkedMounts: [],
+      targetingBonus: 0,
+    };
+    this.ship.targetingGroups.push(newTargetingGroup);
+    this.updateTargetingBonus();
+    this.updateCost();
+  }
+
+  deleteMount(mountId: number): void {
+    this.ship.mounts = this.ship.mounts.filter((mount) => mount.mountId !== mountId);
+    this.updateTargetingBonus();
+    this.updateCost();
+  }
+
+  deleteTargetingGroup(targetingGroupId: number): void {
+    this.ship.targetingGroups = this.ship.targetingGroups.filter((targetingGroup) => targetingGroup.targetingGroupId !== targetingGroupId);
+    this.ship.targetingGroups.forEach((group, index) => {
+      const oldGroupId = group.targetingGroupId;
+      const newGroupId = index + 1;
+      group.targetingGroupId = newGroupId;
+      this.ship.mounts.forEach((mount) => {
+        if (mount.targetingGroupId === targetingGroupId) {
+          mount.targetingGroupId = -1;
+        } else if (mount.targetingGroupId === oldGroupId) {
+          mount.targetingGroupId = newGroupId;
+        }
+      });
+    });
+    this.nextTargetingGroupId = this.ship.targetingGroups.length + 1;
+    this.updateTargetingBonus();
+    this.updateCost();
+  }
+
+  addMountToGroup(mountId: number, targetingGroupId: number) {
+    const mount = this.ship.mounts.find((mount) => mount.mountId === mountId);
+    if (mount) {
+      mount.targetingGroupId = targetingGroupId;
+    }
+    this.updateTargetingBonus();
+    this.updateCost();
+  }
+
+  cloneMount(mountId: number): void {
+    const mountToClone = this.ship.mounts.find((mount) => mount.mountId === mountId);
+    if (mountToClone) {
+      const clonedMount: Mount = {
+        ...mountToClone,
+        mountId: this.nextMountId++,
+        targetingGroupId: -1,
+      };
+      this.ship.mounts.push(clonedMount);
+      this.updateTargetingBonus();
+      this.updateCost()
+    }
+  }
+
+  updateTargetingBonus(): void {
+    this.ship.targetingGroups.forEach((group) => {
+      group.targetingBonus = this.constantsService.getHUDBonus(this.ship.techLevel, group.hudCost);
+      console.log('Group Bonus (,',group.targetingGroupId, '): ', group.targetingBonus);
+      let mountCount: number = 0;
+      this.ship.mounts.forEach((mount) => {
+        if (mount.targetingGroupId === group.targetingGroupId) {
+          if (mount.targetingGroupId === group.targetingGroupId) {
+            mountCount += mount.count;
+          }
+        }
+      });
+      group.targetingBonus += mountCount > 1 ? (mountCount - 1) * 2 : 0;
+    });
+    this.updateCost();
+  }
+  
+  getTargetingGroupBonus(isPulseLaser: boolean, targetingGroupId?: number): number {
+    if (!targetingGroupId) return 0; // Return 0 if no targeting group is assigned
+    const targetingGroup = this.ship.targetingGroups.find((group) => group.targetingGroupId === targetingGroupId);
+    
+    return targetingGroup ? (targetingGroup.targetingBonus * (isPulseLaser ? 2 : 1)) : 0; // Return the bonus if found, otherwise 0
+  }
+
+  validateCount(mount: Mount): void {
+    if (mount.firingMechanism === 'Missile Launcher') {
+      mount.count = 1; // Restrict count to 1 for Missile Launcher
+    }
+    this.updateCost();
+  }
+
+  get targetingGroupCost(): number {
+    return this.ship.targetingGroups.reduce((sum, group) => sum + group.hudCost, 0);
+  }
+  
+  get maxTargetingGroupBonus(): number {
+    if (!this.ship?.targetingGroups || this.ship.targetingGroups.length === 0) {
+      return 0; // Return 0 if no targeting groups exist
+    }
+    return Math.max(...this.ship.targetingGroups.map(group => group.targetingBonus || 0));
+  }
+  
+  get totalMountMass(): number {
+    return this.ship.mounts.reduce((total, mount) => {
+      return total + (mount.mass || 0); // Defaults to 0 if mount.mass is undefined
+    }, 0);
+  }  
+  get totalMountVolume(): number {
+    return this.ship.mounts.reduce((total, mount) => {
+      return total + (mount.volume || 0); // Defaults to 0 if mount.mass is undefined
+    }, 0);
+  }
+  get totalMountPowerNeeds(): number {
+    return this.ship.mounts.reduce((total, mount) => {
+      return total + (mount.powerNeeds || 0); // Defaults to 0 if mount.mass is undefined
+    }, 0);
+  }  
+  get armamentsCost(): number {
+    return this.ship.mounts.reduce((sum, mount) => {
+      let firingMechanismCost = 0;
+      let mountTypeCost = 0;
+      if (mount.mountType === 'Fixed Mount') {
+        mountTypeCost = 50000;
+      }
+      if (mount.mountType === 'Flexible Mount') {
+        mountTypeCost = 100000;
+      }
+      if (mount.mountType === 'Turret Mount') {
+        mountTypeCost = 150000;
+      }
+    // Check if the firing mechanism is a 'Missile Launcher'
+      if (mount.firingMechanism === 'Missile Launcher') {
+        mount.shotsPerMagazine = this.constantsService.getMissilesPerMetricTon(this.ship.techLevel);
+        mount.shots = mount.shotsPerMagazine;
+        mount.magazines = 1;
+        mount.mass = this.constantsService.getMissileLauncherMassVolume(this.ship.techLevel);
+        mount.volume = mount.mass;
+        const magazineMass: number = this.constantsService.getMagazineTonsPerAmmoMetricTon(this.ship.techLevel);
+        if (mount.mountType === 'Flexible Mount') {
+          mount.mass *= 2;
+          mount.volume *= 2;
+        } 
+        if (mount.mountType === 'Turret Mount') {
+          mount.mass *= 3;
+          mount.volume *= 3;
+        }
+        mount.mass += magazineMass + 1; // 1 metric ton of missiles
+        mount.powerNeeds = 1;
+        mount.weaponMark = 0;
+        firingMechanismCost =
+          1000000 + // Base cost for Missile Launcher
+          (10000 * magazineMass) +// Magazine cost
+          50000 * mount.shotsPerMagazine; // Tech-level-dependent cost of missiles per magazine
+      } else {
+        // For all other firing mechanisms, retrieve costs based on frame size
+        const firingMechanismCostData = this.constantsService.getFiringMechanismCost(mount.firingMechanism);
+        let weaponMarkData: FrameValues = { Compact: 0, Small: 0, Medium: 0, Large: 0, UltraLarge: 0 };;
+        let weaponShotsPerMetricTon: FrameValues = { Compact: 0, Small: 0, Medium: 0, Large: 0, UltraLarge: 0 };
+        let weaponMassVolume: FrameValues  = { Compact: 0, Small: 0, Medium: 0, Large: 0, UltraLarge: 0 };
+        if (mount.firingMechanism === 'Autocannon' || mount.firingMechanism === 'Projectile Cannon') {
+          weaponMarkData = this.constantsService.getProjectileAutoCannonValue(this.ship.techLevel);
+          weaponShotsPerMetricTon = this.constantsService.getProjectileAutoCannonShotsPerMetricTon(this.ship.techLevel);
+          if (mount.magazines < 1) {
+            mount.magazines = 1;
+          }
+        } else if(mount.firingMechanism === 'Laser Cannon' || mount.firingMechanism === 'Blaster Cannon' || mount.firingMechanism === 'Plasma Cannon') {
+          weaponMarkData = this.constantsService.getLaserBlasterPlasmaCannonValue(this.ship.techLevel);
+        } else if (mount.firingMechanism === 'Disruptor Cannon') {
+          weaponMarkData = this.constantsService.getDisruptorCannonValue(this.ship.techLevel);
+        } else if (mount.firingMechanism === 'Ion Cannon') {
+          weaponMarkData = this.constantsService.getIonCannonValue(this.ship.techLevel);
+        } else {
+          weaponMarkData = { Compact: 0, Small: 0, Medium: 0, Large: 0, UltraLarge: 0 }
+        }
+        weaponMassVolume = this.constantsService.getFiringMechanismMassVolume(mount.firingMechanism as string);
+        
+
+        switch (mount.frameSize) {
+          case 'Compact':
+            firingMechanismCost = firingMechanismCostData.Compact;
+            mount.weaponMark = weaponMarkData.Compact;
+            mount.shotsPerMagazine = weaponShotsPerMetricTon.Compact;
+            mount.mass = weaponMassVolume.Compact;
+            break;
+          case 'Small':
+            firingMechanismCost = firingMechanismCostData.Small;
+            mount.weaponMark = weaponMarkData.Small;
+            mount.shotsPerMagazine = weaponShotsPerMetricTon.Small;
+            mount.mass = weaponMassVolume.Small;
+            break;
+          case 'Medium':
+            firingMechanismCost = firingMechanismCostData.Medium;
+            mount.weaponMark = weaponMarkData.Medium;
+            mount.shotsPerMagazine = weaponShotsPerMetricTon.Medium;
+            mount.mass = weaponMassVolume.Medium;
+            break;
+          case 'Large':
+            firingMechanismCost = firingMechanismCostData.Large;
+            mount.weaponMark = weaponMarkData.Large;
+            mount.shotsPerMagazine = weaponShotsPerMetricTon.Large;
+            mount.mass = weaponMassVolume.Large;
+            break;
+          case 'UltraLarge':
+            firingMechanismCost = firingMechanismCostData.UltraLarge;
+            mount.weaponMark = weaponMarkData.UltraLarge;
+            mount.shotsPerMagazine = weaponShotsPerMetricTon.UltraLarge;
+            mount.mass = weaponMassVolume.UltraLarge;
+            break;
+          default:
+            firingMechanismCost = 0; // Default case for invalid frame size
+            mount.weaponMark = 0;
+            mount.shotsPerMagazine = 0;
+            mount.mass = 0;
+            break;
+        }
+        if (mount.firingMechanism === 'Autocannon') {
+          mount.powerNeeds = 1;
+        } else if (mount.firingMechanism === 'Plasma Cannon') {
+          mount.powerNeeds = mount.weaponMark * 2;
+        } else {
+          mount.powerNeeds = mount.weaponMark;
+        }
+        mount.shots = mount.shotsPerMagazine * mount.magazines;
+        mount.mass *= mount.count;
+        mount.volume = mount.mass;
+        if (mount.mountType === 'Flexible Mount') {
+          mount.mass *= 2;
+          mount.volume *= 2;
+        } 
+        if (mount.mountType === 'Turret Mount') {
+          mount.mass *= 3;
+          mount.volume *= 3;
+        }
+        if (mount.firingMechanism === 'Autocannon' || mount.firingMechanism === 'Projectile Cannon') {
+          const magazineMass = this.constantsService.getMagazineTonsPerAmmoMetricTon(this.ship.techLevel);
+          firingMechanismCost += magazineMass * 10000 * mount.count;  // cost of magazines for each firingMechanisms of mount
+          firingMechanismCost += mount.magazines * 10000 * mount.count; // cost of ammo for each firingMechanisms magazine of mount
+          mount.mass += ((mount.magazines * magazineMass) + mount.magazines) * mount.count; // 1 metric ton ammo per magazine
+        }
+      }
+      mount.mountCost = (firingMechanismCost * (mount.count || 1)) + mountTypeCost;
+      mount.countText = this.constantsService.getNumberText(mount.count);
+      // Multiply by count of firing mechanisms in the mount and add to total
+      return sum + mount.mountCost;
+    }, 0);
   }
 }

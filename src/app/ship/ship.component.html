@@ -287,8 +287,107 @@
                 </div>
             </mat-step>
             <mat-step label="Select Armaments">
-                <ng-template matStepLabel>Select Armaments</ng-template>
                 <!-- Content for Select Armaments -->
+                <h2>Select Armaments</h2>
+                <button mat-raised-button color="primary" (click)="addMount()">Add Mount</button>
+                @if(ship.mounts.length === 0 ){
+                    <div class="no-mounts">
+                        <p>No mounts added yet. Click "Add Mount" to start.</p>
+                    </div>
+                }@else {
+                    <div *ngFor="let mount of ship.mounts; let i = index" class="mount-container">
+                        <!-- Firing Mechanism -->
+                        <div class="inline-fields">
+                            <mat-form-field appearance="outline" class="full-width">
+                                <mat-label>Firing Mechanism</mat-label>
+                                <mat-select [(ngModel)]="mount.firingMechanism" (selectionChange)="validateCount(mount)">
+                                    <mat-option *ngFor="let option of firingMechanismOptions" [value]="option">
+                                    {{ option }}
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                            <!-- Mount Type -->
+                            <div>
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Mount Type:</mat-label>
+                                    <mat-select [(ngModel)]="mount.mountType" (ngModelChange)="updateCost($event)">
+                                        <mat-option value="Fixed Mount">Fixed Mount</mat-option>
+                                        <mat-option value="Flexible Mount">Flexible Mount</mat-option>
+                                        <mat-option value="Turret Mount">Turret Mount</mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+                            </div>                            
+                            <!-- Count -->
+                            <mat-form-field appearance="outline" class="small-field">
+                            <mat-label>Qty</mat-label>
+                            <input
+                                matInput
+                                type="number"
+                                min="1"
+                                [max]="mount.firingMechanism === 'Missile Launcher' ? 1 : 10"
+                                [(ngModel)]="mount.count"
+                                (ngModelChange)="updateCost($event)"
+                            />
+                            </mat-form-field>
+                        
+                            <!-- Frame Size -->
+                            <mat-form-field appearance="outline" class="medium-field">
+                                <mat-label>Frame Size</mat-label>
+                                <mat-select [(ngModel)]="mount.frameSize" (ngModelChange)="updateCost($event)" [disabled]="mount.firingMechanism === 'Missile Launcher'">
+                                    <mat-option *ngFor="let size of frameSizes" [value]="size">
+                                    {{ size }}
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                            <mat-form-field appearance="outline" class="medium-field">
+                                <mat-label>Targeting Group</mat-label>
+                                <mat-select
+                                  [(ngModel)]="mount.targetingGroupId"
+                                  (ngModelChange)="addMountToGroup(mount.mountId, $event)"  
+                                >
+                                  <mat-option *ngFor="let group of ship.targetingGroups" [value]="group.targetingGroupId">
+                                    Group {{ group.targetingGroupId }}: + {{ group.targetingBonus }}
+                                  </mat-option>
+                                  <mat-option [value]="-1">None</mat-option>
+                                </mat-select>
+                              </mat-form-field>                        
+                            <!-- Actions -->
+                            <div class="mount-actions">
+                                <button mat-icon-button color="warn" (click)="deleteMount(mount.mountId)" aria-label="Delete Mount">
+                                    <mat-icon>delete</mat-icon>
+                                </button>
+                                <button mat-icon-button color="primary" (click)="cloneMount(mount.mountId)" aria-label="Clone Mount">
+                                    <mat-icon>content_copy</mat-icon>
+                                </button>
+                            </div>
+                        </div>
+                        @if(mount.firingMechanism === 'Autocannon' || mount.firingMechanism === 'Projectile Cannon') {
+                            <div class="inline-form-container">
+                                <mat-label class="inline-label">Magazines ({{mount.shotsPerMagazine}} shots per magazine):</mat-label>
+                                <mat-form-field appearance="outline" class="medium-field">
+                                    <mat-label>Number of Magazines</mat-label>
+                                    <input
+                                    matInput
+                                    type="number"
+                                    min="1"
+                                    max = "99999999"
+                                    [(ngModel)]="mount.magazines"
+                                    (ngModelChange)="updateCost($event)"
+                                    placeholder="Enter number of ammo magazines"
+                                    />
+                                </mat-form-field>
+                            </div>
+                        }
+                        @if(mount.firingMechanism === 'Laser Cannon') {
+                            <mat-radio-group [(ngModel)]="mount.isPulseLaser" class="radio-group" (ngModelChange)="updateCost($event)">
+                                <mat-label>Pulse Laser?:</mat-label>
+                                <mat-radio-button [value]="true">Yes</mat-radio-button>
+                                <mat-radio-button [value]="false">No</mat-radio-button>
+                            </mat-radio-group>
+                        }
+                      </div>
+                }
+
                 <div class="step-navigation">
                     <!-- Back Button -->
                     <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
@@ -297,8 +396,30 @@
                 </div>
             </mat-step>
             <mat-step label="Determine Targeting Bonus">
-                <ng-template matStepLabel>Determine Targeting Bonus</ng-template>
                 <!-- Content for Determine Targeting Bonus -->
+                <h2>Determine Targeting Bonus</h2>
+                <button mat-raised-button color="primary" (click)="addTargetingGroup()">Add Targeting Group</button>
+                @if(ship.targetingGroups.length === 0 ){
+                    <div class="no-mounts">
+                        <p>No targeting groups added yet. Click "Add Targeting Group" to start.</p>
+                    </div>
+                }@else {
+                    <div *ngFor="let group of ship.targetingGroups">
+                        <h2>Targeting Group {{ group.targetingGroupId }} - Bonus: {{group.targetingBonus}}</h2>
+                        <!-- HUD Cost -->
+                        <mat-form-field appearance="outline" class="medium-field">
+                            <mat-label>Select HUD Cost</mat-label>
+                            <mat-select [(ngModel)]="group.hudCost" (ngModelChange)="updateTargetingBonus()">
+                                <mat-option *ngFor="let cost of hudCosts" [value]="cost">
+                                ¢{{ cost | number }}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                        <button mat-icon-button color="warn" (click)="deleteTargetingGroup(group.targetingGroupId)" aria-label="Delete Targeting Group">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </div>
+                }
                 <div class="step-navigation">
                     <!-- Back Button -->
                     <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
@@ -330,7 +451,6 @@
                       }
                     </mat-select>
                 </mat-form-field>                
-                 
                 <div class="step-navigation">
                     <!-- Back Button -->
                     <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
@@ -617,7 +737,25 @@
             </mat-step>
             <mat-step label="Determine Minimum Crew">
                 <!-- Content for Determine Minimum Crew -->
-                <h2>Nothing to Select</h2>
+                <h2>Determine Minimum Crew</h2>
+                <mat-radio-group [(ngModel)]="ship.hasCrewOverride" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Override Minimum Crew:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+                <mat-form-field appearance="outline" class="cargo-field">
+                    <mat-label>Minimum Crewmember Override:</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      min="1"
+                      [max] = "999999999"
+                      [(ngModel)]="ship.crewOverride"
+                      (ngModelChange)="updateCost($event)"
+                      [disabled]="!ship.hasCrewOverride"
+                      placeholder="Enter override number of Crewmembers"
+                    />
+                </mat-form-field>    
                 <div class="step-navigation">
                     <!-- Back Button -->
                     <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
@@ -664,7 +802,12 @@
             </mat-step>
             <mat-step label="Select Crew Quarters">
                 <!-- Content for Select Crew Quarters -->
-                <h2>Nothing to Select</h2>
+                <h2>Select Crew Quarters</h2>
+                <mat-radio-group [(ngModel)]="ship.hasCrewQuarters" class="radio-group" (ngModelChange)="updateCost($event)">
+                    <mat-label>Crew Quarters:</mat-label>
+                    <mat-radio-button [value]="true">Yes</mat-radio-button>
+                    <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
                 <div class="step-navigation">
                     <!-- Back Button -->
                     <button mat-raised-button color="accent" (click)="stepper.previous()" class="nav-button">Back</button>
@@ -1037,7 +1180,7 @@
                     <mat-slider
                         id="predict-program-rating-slider"
                         min="0"
-                        max="100"
+                        [max]="maxTargetingGroupBonus"
                         step="1"
                         >
                         <input matSliderThumb [(ngModel)]="ship.predictProgramRating" (ngModelChange)="updateCost($event)" />
@@ -1220,10 +1363,10 @@
                 <p>Vehicle Type: <strong>{{ship.governingBody}} - {{ ship.shipType }} - {{ship.modificationType}}</strong></p>
             }
             @if (ship.mass) {
-                <p>Ship Mass: <strong>{{ ship.mass  | number:'1.0-0'}} mt</strong>, Current Mass Used: <strong>{{ship.currentMass | number:'1.0-0'}} mt</strong></p>
+                <p>Ship Mass: <strong>{{ ship.mass  | number:'1.0-0'}} mt</strong>, Current Mass Used: <strong>{{ship.currentMass | number:'1.0-3'}} mt</strong></p>
             } 
             @if (ship.volume) {
-                <p>Ship Volume: <strong>{{ ship.volume  | number:'1.0-0'}} kL</strong>, Current Volume Used: <strong>{{ship.currentVolume | number:'1.0-0'}} kL</strong></p>
+                <p>Ship Volume: <strong>{{ ship.volume  | number:'1.0-0'}} kL</strong>, Current Volume Used: <strong>{{ship.currentVolume | number:'1.0-3'}} kL</strong></p>
             }            
             @if (ship.cost >= 0) {
                 <p>Ship Cost: <strong>{{ ship.cost  | number:'1.0-0'}} credits</strong></p>
@@ -1238,7 +1381,7 @@
                 <p>Superior Alloy: <strong>{{ ship.superiorAlloy.effect}}</strong>, Cost: <strong>{{ superiorAlloyCost  | number:'1.0-0'}} credits</strong></p>
             }
             @if (ship.maxAcceleration >= 0) {
-                <p>Maximum Acceleration: <strong>{{ ship.maxAcceleration}} Gs</strong></p>
+                <p>Maximum Acceleration Loaded: <strong>{{ ship.maxAcceleration  | number:'1.0-3'}} Gs</strong>, Unloaded: <strong>{{ unloadedAcceleration  | number:'1.0-3'}} Gs</strong></p>
             }
             @if(ship.maxAcceleration > 1 && ship.reinforcement >= 0) {
                 <p>Reinforcement Required: <strong>{{ ship.reinforcement*100 | number:'1.0-2'}}%</strong>, Cost: <strong>{{ reinforcementCost  | number:'1.0-0'}} credits</strong></p>
@@ -1246,8 +1389,8 @@
             @if (ship.strongPoints >=0) {
                 <p>Strong Points: <strong>{{ ship.strongPoints + baseStrongPoints  | number:'1.0-0'}}</strong>, Cost: <strong>{{ strongPointCost  | number:'1.0-0'}} credits</strong></p>
             }
-            @if (ship.hardPoints >=0) {
-                <p>Hard Points: <strong>{{ ship.hardPoints  | number:'1.0-0'}}</strong>, Cost: <strong>{{ hardPointCost  | number:'1.0-0'}} credits</strong></p>
+            @if (hardPointNeeds >=0 || ship.hardPoints > 0) {
+                <p>Hard Points: <strong>@if(hardPointNeeds > ship.hardPoints){ {{ hardPointNeeds  | number:'1.0-0'}} } @else { {{ ship.hardPoints | number:'1.0-0'}}}</strong>, Cost: <strong>{{ hardPointCost  | number:'1.0-0'}} credits</strong></p>
             }
             @if (ship.armorBelt) {
                 <p>Armor Belt: <strong>+{{ ship.armorBelt.db }} DB and +{{ ship.armorBelt.hitsMultiplier }}% Hits</strong>, Cost: <strong>{{ armorBeltCost  | number:'1.0-0'}} credits</strong></p>
@@ -1275,6 +1418,20 @@
             }
             @if (ship.hasSpatialFoldDrive) {
                 <p>Spatial Fold Drive Maximum Range: <strong>{{ ship.spatialFoldDriveRange | number:'1.0-0'}} LY</strong>, Cost: <strong>{{ spatialFoldDriveCost  | number:'1.0-0'}} credits</strong></p>
+            }
+            @if (ship.mounts.length > 0) {
+                @for (mount of ship.mounts; track mount) {
+                    <p>{{mount.mountType}} @if(mount.firingMechanism !== 'Missile Launcher'){{{mount.frameSize}} }  @if(mount.count > 1){{{mount.countText}}-}@if(mount.isPulseLaser){Pulse }{{mount.firingMechanism}}@if(mount.targetingGroupId >= 0) {, Targeting Group {{mount.targetingGroupId}}: <strong>+{{getTargetingGroupBonus(mount.isPulseLaser, mount.targetingGroupId)}}</strong>}@if(mount.firingMechanism !== 'Missile Launcher'){, MK <strong>{{mount.weaponMark}}</strong>@if(mount.firingMechanism === 'Autocannon' || mount.firingMechanism === 'Projectile Cannon') {, Shots: <strong>{{mount.shots  | number:'1.0-0'}}</strong>}}@else{, Missiles: <strong>{{mount.shots  | number:'1.0-0'}}</strong>}, Cost: <strong>{{mount.mountCost  | number:'1.0-0'}} credits</strong></p>
+                }
+            } @else {
+                <p>No mounts available. Add mounts to see the details here.</p>
+            }
+            @if (ship.targetingGroups.length > 0) {
+                @for (group of ship.targetingGroups; track group) {
+                    <p>Targeting Group {{group.targetingGroupId}} Bonus: <strong>{{group.targetingBonus}}</strong>, Cost: <strong>{{group.hudCost| number:'1.0-0'}} credits</strong></p>
+                }
+            } @else {
+                <p>No Targeting Groups available. Add Targeting Groups to see the details here.</p>
             }
             @if (ship.payloadPallets > 0) {
                 <p>Payload Pallets: <strong>{{ ship.payloadPallets | number:'1.0-0'}}</strong>, Size: <strong>{{ ship.payloadPalletFrameSize}} - MK {{ship.torpedoMark | number:'1.0-0'}} </strong>, Cost: <strong>{{ payloadPalletCost  | number:'1.0-0'}} credits</strong></p>
@@ -1460,7 +1617,14 @@
             @if (ship.shipFeatures.wellShieldedDrives) {
                 <p>Well Shielded Drives Cost: <strong>{{ shipCostBeforeFeaturesFlaws * 0.1  | number:'1.0-0'}} credits</strong></p>
             }
-
+            @if (ship.totalCrew > 0) {
+                <p>Total Ship Crew: <strong>{{ ship.totalCrew | number:'1.0-0'}}</strong></p>
+                <p>Pilots: <strong>{{ ship.crew.pilot | number:'1.0-0'}}</strong></p>
+                <p>Gunners: <strong>{{ ship.crew.gunner | number:'1.0-0'}}</strong></p>
+                <p>Technicians: <strong>{{ ship.crew.technicians | number:'1.0-0'}}</strong></p>
+                <p>Gunnery Technicians: <strong>{{ ship.crew.gunneryTechnician | number:'1.0-0'}}</strong></p>
+                <p>Additional Crew: <strong>{{ ship.crew.additional | number:'1.0-0'}}</strong></p>
+            }
         </div>
     </div>
 </div>

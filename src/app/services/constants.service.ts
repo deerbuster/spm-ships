@@ -1,5 +1,6 @@
 import { Injectable } from "@angular/core";
-import { ArmorBeltOption, EWTechLevel, FrameMarkValues, FrameSize, HullMaterial, QuantumDriveValues, SuperiorAlloy, TorpedoDetails } from "../models/types";
+import { ArmorBeltOption, EWTechLevel, FrameSize, FrameValues, HullMaterial, QuantumDriveValues, SuperiorAlloy, TorpedoDetails } from "../models/types";
+import { TestScheduler } from "rxjs/testing";
 
 @Injectable({
     providedIn: 'root'
@@ -10,10 +11,10 @@ export class ConstantsService {
         { category: 'XII', material: 'Titanium', techLevel: 16, volumeFactor: 0.02, costMultiplier: 1.5, maximumMass: 300000, strongPointCost: 900, hardPointCost: 9000, strongPointVolumeMass: 2, hardPointVolumeMass: 20 },
         { category: 'XIII', material: 'Crysteel', techLevel: 17, volumeFactor: 0.02, costMultiplier: 3.0, maximumMass: 400000, strongPointCost: 500, hardPointCost: 5000, strongPointVolumeMass: 1, hardPointVolumeMass: 10 },
         { category: 'XIV', material: 'Crystanium', techLevel: 18, volumeFactor: 0.02, costMultiplier: 5.5, maximumMass: 500000, strongPointCost: 100, hardPointCost: 1000, strongPointVolumeMass: 0.4, hardPointVolumeMass: 4 },
-        { category: 'XV', material: 'Reinforced Crystani.', techLevel: 18, volumeFactor: 0.06, costMultiplier: 7.0, maximumMass: 600000, strongPointCost: 90, hardPointCost: 900, strongPointVolumeMass: 0.3, hardPointVolumeMass: 3 },
+        { category: 'XV', material: 'Reinforced Crystanium', techLevel: 18, volumeFactor: 0.06, costMultiplier: 7.0, maximumMass: 600000, strongPointCost: 90, hardPointCost: 900, strongPointVolumeMass: 0.3, hardPointVolumeMass: 3 },
         { category: 'XVI', material: 'Fullerene', techLevel: 18, volumeFactor: 0.02, costMultiplier: 8.5 , maximumMass: 700000, strongPointCost: 80, hardPointCost: 800, strongPointVolumeMass: 0.2, hardPointVolumeMass: 2 },
         { category: 'XVII', material: 'Reinforced Fullerene', techLevel: 18, volumeFactor: 0.06, costMultiplier: 10.0, maximumMass: 800000, strongPointCost: 70, hardPointCost: 700, strongPointVolumeMass: 0.1, hardPointVolumeMass: 1 },
-        { category: 'XVIII', material: 'Crystan.Double Hull', techLevel: 19, volumeFactor: 0.10, costMultiplier: 15.0, maximumMass: 900000, strongPointCost: 10, hardPointCost: 100, strongPointVolumeMass: 0.02, hardPointVolumeMass: 0.2 },
+        { category: 'XVIII', material: 'Crystanium Double Hull', techLevel: 19, volumeFactor: 0.10, costMultiplier: 15.0, maximumMass: 900000, strongPointCost: 10, hardPointCost: 100, strongPointVolumeMass: 0.02, hardPointVolumeMass: 0.2 },
         { category: 'XIX', material: 'Fullerene Double Hull', techLevel: 19, volumeFactor: 0.10, costMultiplier: 30.0, maximumMass: 1000000, strongPointCost: 5, hardPointCost: 50, strongPointVolumeMass: 0.01, hardPointVolumeMass: 0.1 },
         { category: 'XX', material: 'Collosium', techLevel: 24, volumeFactor: 0.04, costMultiplier: 50.0, maximumMass: 999999999, strongPointCost: 0, hardPointCost: 0, strongPointVolumeMass: 0, hardPointVolumeMass: 0 },
     ];
@@ -406,7 +407,7 @@ export class ConstantsService {
         28: { volume: 400, mass: 200, cost: 20_000_000 },
         29: { volume: 200, mass: 100, cost: 10_000_000 },
     };
-    public readonly TORPEDO_RATINGS: { [techLevel: number]: FrameMarkValues } = {
+    public readonly TORPEDO_RATINGS: { [techLevel: number]: FrameValues } = {
         15: { Compact: 5, Small: 10, Medium: 15, Large: 20, UltraLarge: 25 },
         16: { Compact: 5, Small: 10, Medium: 15, Large: 20, UltraLarge: 25 },
         17: { Compact: 6, Small: 12, Medium: 18, Large: 24, UltraLarge: 30 },
@@ -423,6 +424,136 @@ export class ConstantsService {
         28: { Compact: 14, Small: 28, Medium: 42, Large: 52, UltraLarge: 68 },
         29: { Compact: 20, Small: 40, Medium: 60, Large: 80, UltraLarge: 100 },
       };
+
+      public readonly FIRING_MECHANISM_MASSVOLUME: {[firingMechanism: string]: FrameValues} = {
+        'Autocannon': {Compact: 5, Small: 10, Medium: 15, Large: 20, UltraLarge: 25},
+        'Projectile Cannon': {Compact: 5, Small: 10, Medium: 15, Large: 20, UltraLarge: 25},
+        'Blaster Cannon': {Compact: 5, Small: 10, Medium: 15, Large: 20, UltraLarge: 25},
+        'Disruptor Cannon': {Compact: 10, Small: 20, Medium: 30, Large: 40, UltraLarge: 50},
+        'Ion Cannon': {Compact: 8, Small: 16, Medium: 24, Large: 32, UltraLarge: 40},
+        'Laser Cannon': {Compact: 4, Small: 8, Medium: 12, Large: 16, UltraLarge: 20},
+        'Plasma Cannon': {Compact: 6.5, Small: 13, Medium: 19.5, Large: 26, UltraLarge: 32.5},
+      }
+
+      public readonly FIRING_MECHANISM_COST: {[firingMechanism: string]: FrameValues} = {
+        'Autocannon': {Compact: 1100000, Small: 2100000, Medium: 3100000, Large: 4100000, UltraLarge: 5100000},
+        'Projectile Cannon': {Compact: 1100000, Small: 2100000, Medium: 3100000, Large: 4100000, UltraLarge: 5100000},
+        'Blaster Cannon': {Compact: 1400000, Small: 5600000, Medium: 10200000, Large: 17600000, UltraLarge: 27000000},
+        'Disruptor Cannon': {Compact: 2800000, Small: 11200000, Medium: 20400000, Large: 35200000, UltraLarge: 54000000},
+        'Ion Cannon': {Compact: 2200000, Small: 9000000, Medium: 16300000, Large: 28200000, UltraLarge: 43200000},
+        'Laser Cannon': {Compact: 1100000, Small: 4500000, Medium: 8200000, Large: 14100000, UltraLarge: 21600000},
+        'Plasma Cannon': {Compact: 2100000, Small: 8400000, Medium: 15300000, Large: 26400000, UltraLarge: 40500000},
+      }
+      public readonly PROJECTILE_AUTOCANNON_MARK_TABLE: {[techLevel: number]: FrameValues} = {
+        15: { Compact: 4, Small: 8, Medium: 12, Large: 16, UltraLarge: 20 },
+        16: { Compact: 4, Small: 8, Medium: 12, Large: 16, UltraLarge: 20 },
+        17: { Compact: 4, Small: 8, Medium: 12, Large: 16, UltraLarge: 20 },
+        18: { Compact: 6, Small: 12, Medium: 18, Large: 24, UltraLarge: 30 },
+        19: { Compact: 6, Small: 12, Medium: 18, Large: 24, UltraLarge: 30 },
+        20: { Compact: 6, Small: 12, Medium: 18, Large: 24, UltraLarge: 30 },
+        21: { Compact: 8, Small: 16, Medium: 24, Large: 32, UltraLarge: 40 },
+        22: { Compact: 8, Small: 16, Medium: 24, Large: 32, UltraLarge: 40 },
+        23: { Compact: 8, Small: 16, Medium: 24, Large: 32, UltraLarge: 40 },
+        24: { Compact: 10, Small: 20, Medium: 30, Large: 40, UltraLarge: 50 },
+        25: { Compact: 10, Small: 20, Medium: 30, Large: 40, UltraLarge: 50 },
+        26: { Compact: 10, Small: 20, Medium: 30, Large: 40, UltraLarge: 50 },
+        27: { Compact: 20, Small: 30, Medium: 40, Large: 50, UltraLarge: 60 },
+        28: { Compact: 20, Small: 30, Medium: 40, Large: 50, UltraLarge: 60 },
+        29: { Compact: 20, Small: 30, Medium: 40, Large: 50, UltraLarge: 60 },
+      };
+
+      public readonly LASER_BLASTER_PLASMA_CANNON_MARK_TABLE: {[techLevel: number]: FrameValues} = {
+        18: { Compact: 0, Small: 0, Medium: 0, Large: 1, UltraLarge: 2 },
+        19: { Compact: 0, Small: 0, Medium: 1, Large: 2, UltraLarge: 3 },
+        20: { Compact: 0, Small: 1, Medium: 2, Large: 3, UltraLarge: 4 },
+        21: { Compact: 1, Small: 2, Medium: 3, Large: 4, UltraLarge: 5 },
+        22: { Compact: 2, Small: 4, Medium: 6, Large: 8, UltraLarge: 10 },
+        23: { Compact: 4, Small: 8, Medium: 12, Large: 16, UltraLarge: 20 },
+        24: { Compact: 8, Small: 16, Medium: 24, Large: 32, UltraLarge: 40 },
+        25: { Compact: 10, Small: 20, Medium: 30, Large: 40, UltraLarge: 50 },
+        26: { Compact: 20, Small: 40, Medium: 60, Large: 80, UltraLarge: 100 },
+        27: { Compact: 40, Small: 80, Medium: 120, Large: 160, UltraLarge: 200 },
+        28: { Compact: 80, Small: 160, Medium: 240, Large: 320, UltraLarge: 400 },
+        29: { Compact: 160, Small: 320, Medium: 480, Large: 640, UltraLarge: 800 },
+      };
+
+      public readonly DISRUPTOR_CANNON_MARK_TABLE: {[techLevel: number]: FrameValues} = {
+        21: { Compact: 0, Small: 0, Medium: 0, Large: 1, UltraLarge: 2 },
+        22: { Compact: 0, Small: 0, Medium: 1, Large: 2, UltraLarge: 3 },
+        23: { Compact: 0, Small: 1, Medium: 2, Large: 3, UltraLarge: 4 },
+        24: { Compact: 1, Small: 2, Medium: 3, Large: 4, UltraLarge: 4 },
+        25: { Compact: 5, Small: 10, Medium: 15, Large: 20, UltraLarge: 25 },
+        26: { Compact: 10, Small: 20, Medium: 30, Large: 40, UltraLarge: 50 },
+        27: { Compact: 20, Small: 40, Medium: 60, Large: 80, UltraLarge: 100 },
+        28: { Compact: 40, Small: 80, Medium: 120, Large: 160, UltraLarge: 200 },
+        29: { Compact: 80, Small: 160, Medium: 240, Large: 320, UltraLarge: 400 },
+      };
+
+      public readonly ION_CANNON_MARK_TABLE: {[techLevel: number]: FrameValues} = {
+        20: { Compact: 0, Small: 0, Medium: 0, Large: 1, UltraLarge: 2 },
+        21: { Compact: 0, Small: 0, Medium: 1, Large: 2, UltraLarge: 3 },
+        22: { Compact: 0, Small: 1, Medium: 2, Large: 3, UltraLarge: 4 },
+        23: { Compact: 1, Small: 2, Medium: 3, Large: 4, UltraLarge: 4 },
+        24: { Compact: 5, Small: 10, Medium: 15, Large: 20, UltraLarge: 25 },
+        25: { Compact: 10, Small: 20, Medium: 30, Large: 40, UltraLarge: 50 },
+        26: { Compact: 20, Small: 40, Medium: 60, Large: 80, UltraLarge: 100 },
+        27: { Compact: 40, Small: 80, Medium: 120, Large: 160, UltraLarge: 200 },
+        28: { Compact: 80, Small: 160, Medium: 240, Large: 320, UltraLarge: 400 },
+        29: { Compact: 160, Small: 320, Medium: 480, Large: 640, UltraLarge: 800 },
+      };
+
+      public readonly MISSILE_LAUNCHER_MASSVOLUME: { [techLevel: number]: number } = {
+        16: 2.50,
+        17: 2.25,
+        18: 2.00,
+        19: 1.75,
+        20: 1.50,
+        21: 1.25,
+        22: 1.00,
+        23: 0.75,
+        24: 0.50,
+        25: 0.25,
+        26: 0.125,
+        27: 0.10,
+        28: 0.05,
+        29: 0.025,
+    };
+
+    public readonly MISSILE_LAUNCHER_METRICTON: { [techLevel: number]: number } = {
+        15: 14,
+        16: 15,
+        17: 16,
+        18: 18,
+        19: 20,
+        20: 22,
+        21: 25,
+        22: 28,
+        23: 33,
+        24: 40,
+        25: 50,
+        26: 66,
+        27: 100,
+        28: 200,
+        29: 400,
+    };
+    public readonly MAGAZINE_TONS_PER_AMMO_METRICTON: { [techLevel: number]: number } = {
+        14: 2.5,
+        15: 2.25,
+        16: 2.0,
+        17: 2.0,
+        18: 1.75,
+        19: 1.75,
+        20: 1.5,
+        21: 1.5,
+        22: 1.25,
+        23: 1.25,
+        24: 1.0,
+        25: 1.0,
+        26: 0.75,
+        27: 0.75,
+        28: 0.5,
+        29: 0.5,
+      };    
     
       // Torpedo Specifications
       public readonly TORPEDO_DETAILS: { [frameSize: string]: TorpedoDetails } = {
@@ -434,6 +565,52 @@ export class ConstantsService {
         UltraLarge: { volume: 5, palletMass: 5, torpedoMass: 1.25, palletCost: 5000, torpedoCost: 125000, gsSpeed: '10/1K' },
       }
 
+      public readonly NUMBER_TO_TEXT_MAP: { [key: number]: string } = {
+        1: '',
+        2: 'Dual',
+        3: 'Triple',
+        4: 'Quad',
+        5: 'Penta',
+        6: 'Hex',
+        7: 'Sept',
+        8: 'Octa',
+        9: 'Nona',
+        10: 'Deca',
+      };      
+      public readonly HUD_BONUS_TABLE: { [techLevel: number]: { [cost: number]: number } } = {
+        15: { 10000: 1, 20000: 2, 60000: 5, 240000: 10, 1200000: 15 },
+        16: { 10000: 1, 20000: 2, 60000: 6, 240000: 11, 1200000: 16 },
+        17: { 10000: 1, 20000: 2, 60000: 7, 240000: 12, 1200000: 17 },
+        18: { 10000: 1, 20000: 3, 60000: 8, 240000: 13, 1200000: 18 },
+        19: { 10000: 1, 20000: 4, 60000: 9, 240000: 14, 1200000: 19 },
+        20: { 10000: 1, 20000: 5, 60000: 10, 240000: 15, 1200000: 20 },
+        21: { 10000: 1, 20000: 6, 60000: 11, 240000: 16, 1200000: 21 },
+        22: { 10000: 2, 20000: 7, 60000: 12, 240000: 17, 1200000: 22 },
+        23: { 10000: 3, 20000: 8, 60000: 13, 240000: 18, 1200000: 23 },
+        24: { 10000: 4, 20000: 9, 60000: 14, 240000: 19, 1200000: 24 },
+        25: { 10000: 5, 20000: 10, 60000: 15, 240000: 20, 1200000: 25 },
+        26: { 10000: 10, 20000: 15, 60000: 20, 240000: 25, 1200000: 30 },
+        27: { 10000: 15, 20000: 20, 60000: 25, 240000: 30, 1200000: 35 },
+        28: { 10000: 20, 20000: 25, 60000: 30, 240000: 35, 1200000: 40 },
+        29: { 10000: 25, 20000: 30, 60000: 35, 240000: 40, 1200000: 45 },
+      };
+      public readonly PROJECTILE_AUTOCANNON_SHOTS_PER_METRIC_TON: { [techLevel: number]: FrameValues } = {
+        15: { Compact: 100, Small: 50, Medium: 33, Large: 25, UltraLarge: 20 },
+        16: { Compact: 100, Small: 50, Medium: 33, Large: 25, UltraLarge: 20 },
+        17: { Compact: 100, Small: 50, Medium: 33, Large: 25, UltraLarge: 20 },
+        18: { Compact: 125, Small: 62, Medium: 41, Large: 31, UltraLarge: 25 },
+        19: { Compact: 125, Small: 62, Medium: 41, Large: 31, UltraLarge: 25 },
+        20: { Compact: 125, Small: 62, Medium: 41, Large: 31, UltraLarge: 25 },
+        21: { Compact: 166, Small: 83, Medium: 55, Large: 41, UltraLarge: 33 },
+        22: { Compact: 166, Small: 83, Medium: 55, Large: 41, UltraLarge: 33 },
+        23: { Compact: 166, Small: 83, Medium: 55, Large: 41, UltraLarge: 33 },
+        24: { Compact: 250, Small: 125, Medium: 83, Large: 62, UltraLarge: 50 },
+        25: { Compact: 250, Small: 125, Medium: 83, Large: 62, UltraLarge: 50 },
+        26: { Compact: 250, Small: 125, Medium: 83, Large: 62, UltraLarge: 50 },
+        27: { Compact: 500, Small: 250, Medium: 166, Large: 125, UltraLarge: 100 },
+        28: { Compact: 500, Small: 250, Medium: 166, Large: 125, UltraLarge: 100 },
+        29: { Compact: 500, Small: 250, Medium: 166, Large: 125, UltraLarge: 100 },
+      };
       getRatingBonus(rating: number): number {
         if (rating <= 30) {
             return this.RATING_BONUS[rating] || 0; // Lookup for ratings <= 30
@@ -552,11 +729,57 @@ export class ConstantsService {
             return  {volume: 0,mass: 0, cost: 0};
         }
     }
-    getTorpedoRatings(techLevel: number): FrameMarkValues {
+    getTorpedoRatings(techLevel: number): FrameValues {
         return this.TORPEDO_RATINGS[techLevel] || { Compact: 0, Small: 0, Medium: 0, Large: 0, UltraLarge: 0 };
     }
     
     getTorpedoDetails(frameSize: FrameSize): TorpedoDetails {
         return this.TORPEDO_DETAILS[frameSize];
-      }
+    }
+
+    getFiringMechanismMassVolume(firingMechanism: string) : FrameValues {
+        return this.FIRING_MECHANISM_MASSVOLUME[firingMechanism];
+    }
+
+    getFiringMechanismCost(firingMechanism: string) : FrameValues {
+        return this.FIRING_MECHANISM_COST[firingMechanism];
+    }
+
+    getMissileLauncherMassVolume(techLevel: number) : number {
+        return this.MISSILE_LAUNCHER_MASSVOLUME[techLevel];
+    }
+
+    getMissilesPerMetricTon(techLevel: number) : number {
+        return this.MISSILE_LAUNCHER_METRICTON[techLevel];
+    }
+    
+    getMagazineTonsPerAmmoMetricTon(techLevel: number): number {
+        return this.MAGAZINE_TONS_PER_AMMO_METRICTON[techLevel] ?? 0;
+    }    
+
+    getNumberText(theNumber: number) : string {
+        return this.NUMBER_TO_TEXT_MAP[theNumber];
+    }
+
+    getHUDBonus(techLevel: number, cost: number): number {
+        return this.HUD_BONUS_TABLE[techLevel]?.[cost] ?? 0; // Default to 0 if no match found
+    }
+    
+    getProjectileAutoCannonValue(techLevel: number): FrameValues {
+        return this.PROJECTILE_AUTOCANNON_MARK_TABLE[techLevel];
+    }
+
+    getLaserBlasterPlasmaCannonValue(techLevel: number): FrameValues {
+        return this.LASER_BLASTER_PLASMA_CANNON_MARK_TABLE[techLevel];
+    }
+    getDisruptorCannonValue(techLevel: number): FrameValues {
+        return this.DISRUPTOR_CANNON_MARK_TABLE[techLevel];
+    }
+    getIonCannonValue(techLevel: number): FrameValues {
+        return this.ION_CANNON_MARK_TABLE[techLevel];
+    }
+
+    getProjectileAutoCannonShotsPerMetricTon(techLevel: number) : FrameValues {
+        return this.PROJECTILE_AUTOCANNON_SHOTS_PER_METRIC_TON[techLevel];
+    }
 }

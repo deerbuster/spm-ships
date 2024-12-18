@@ -1,4 +1,4 @@
-import { ArmorBeltOption, FrameSize, GoverningBody, HullMaterial, ModificationType, PowerSource, ShipCrew, ShipFeature, ShipType, SuperiorAlloy } from "./types";
+import { ArmorBeltOption, FrameSize, GoverningBody, HullMaterial, ModificationType, Mount, PowerSource, ShipCrew, ShipFeature, ShipType, SuperiorAlloy, TargetingGroup } from "./types";
 
 export type Ship = {
   mass: number;
@@ -8,6 +8,8 @@ export type Ship = {
   cost: number;
   crew: ShipCrew;
   totalCrew: number;
+  hasCrewOverride: boolean;
+  crewOverride: number;
   totalPassengers: number;
   shipType: ShipType;
   techLevel: number;
@@ -34,6 +36,8 @@ export type Ship = {
   jumpDriveRange: number;
   hasSpatialFoldDrive: boolean;
   spatialFoldDriveRange: number;
+  mounts: Mount[];
+  targetingGroups: TargetingGroup[];
   payloadPalletFrameSize: FrameSize;
   payloadPallets: number;
   torpedoMark: number;
@@ -61,6 +65,7 @@ export type Ship = {
   fuelVolumePerWeek: number;
   aiSystem: boolean;
   aiCrewmembers: number;
+  hasCrewQuarters: boolean;
   lifeSupport: boolean;
   firstClassStaterooms: number;
   standardStaterooms: number;
